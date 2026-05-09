@@ -95,53 +95,64 @@ function App() {
       <main className="flex-1 overflow-y-auto px-5 py-8">
         
         {/* Search Section */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-slate-800 mb-2 font-[Plus_Jakarta_Sans,sans-serif] tracking-tight">Track Cargo</h2>
-          <p className="text-sm text-slate-500 mb-6">Enter your waybill or container number for live updates.</p>
-          
-          <form onSubmit={handleTrack} className="space-y-4">
-            <div className="relative group">
-              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-500" />
-              <input 
-                type="text" 
-                value={trackingNumber}
-                onChange={(e) => setTrackingNumber(e.target.value)}
-                placeholder="Waybill Tracking Number" 
-                className={`w-full bg-white border ${error ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'} rounded-2xl py-4 pl-11 pr-4 text-sm font-medium text-slate-800 placeholder-slate-400 outline-none focus:ring-4 transition-all shadow-sm`}
-              />
-            </div>
-            {error && (
-               <p className="text-xs text-red-500 font-medium flex items-start gap-1.5 animate-fade-in-down">
-                 <AlertCircle size={14} className="mt-0.5 shrink-0" /> {error}
-               </p>
-            )}
-            <button 
-              type="submit"
-              disabled={!trackingNumber || isSearching}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-2xl py-4 text-sm font-bold shadow-lg shadow-blue-600/25 transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100"
-            >
-              {isSearching ? <Loader2 size={18} className="animate-spin" /> : 'Track Container'}
-            </button>
-          </form>
-        </div>
+        {!result && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-slate-800 mb-2 font-[Plus_Jakarta_Sans,sans-serif] tracking-tight">Track Cargo</h2>
+            <p className="text-sm text-slate-500 mb-6">Enter your waybill or container number for live updates.</p>
+            
+            <form onSubmit={handleTrack} className="space-y-4">
+              <div className="relative group">
+                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-500" />
+                <input 
+                  type="text" 
+                  value={trackingNumber}
+                  onChange={(e) => setTrackingNumber(e.target.value)}
+                  placeholder="Waybill Tracking Number" 
+                  className={`w-full bg-white border ${error ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'} rounded-2xl py-4 pl-11 pr-4 text-sm font-medium text-slate-800 placeholder-slate-400 outline-none focus:ring-4 transition-all shadow-sm`}
+                />
+              </div>
+              {error && (
+                 <p className="text-xs text-red-500 font-medium flex items-start gap-1.5 animate-fade-in-down">
+                   <AlertCircle size={14} className="mt-0.5 shrink-0" /> {error}
+                 </p>
+              )}
+              <button 
+                type="submit"
+                disabled={!trackingNumber || isSearching}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-2xl py-4 text-sm font-bold shadow-lg shadow-blue-600/25 transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100"
+              >
+                {isSearching ? <Loader2 size={18} className="animate-spin" /> : 'Track Container'}
+              </button>
+            </form>
+          </div>
+        )}
 
         {/* Tracking Timeline */}
         {result && (
-          <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
+          <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm animate-[slide-up_0.3s_ease-out]">
             <div className="flex items-center justify-between mb-6 border-b border-slate-50 pb-4">
                <div>
                  <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-0.5">Waybill</p>
                  <p className="text-sm font-bold text-slate-800 font-mono tracking-tight">{result.waybill.tracking_number.toUpperCase()}</p>
-                 <p className="text-[10px] text-slate-500 font-medium mt-1">To: {result.waybill.client_name}</p>
+                 <p className="text-xs font-semibold text-slate-700 mt-1">{result.waybill.origin} &rarr; {result.waybill.destination}</p>
+                 <p className="text-[10px] text-slate-500 font-medium mt-0.5">Client: {result.waybill.client_name} | {result.waybill.container_type}</p>
                </div>
-               <div className={`border px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${
-                 result.waybill.status === 'In Transit' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
-                 result.waybill.status === 'Delayed' ? 'bg-red-50 border-red-100 text-red-600' :
-                 result.waybill.status === 'Delivered' ? 'bg-slate-50 border-slate-200 text-slate-600' :
-                 'bg-blue-50 border-blue-100 text-blue-600'
-               }`}>
-                 {result.waybill.status === 'In Transit' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>}
-                 {result.waybill.status}
+               <div className="flex flex-col items-end gap-2">
+                 <div className={`border px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${
+                   result.waybill.status === 'In Transit' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
+                   result.waybill.status === 'Delayed' ? 'bg-red-50 border-red-100 text-red-600' :
+                   result.waybill.status === 'Delivered' ? 'bg-slate-50 border-slate-200 text-slate-600' :
+                   'bg-blue-50 border-blue-100 text-blue-600'
+                 }`}>
+                   {result.waybill.status === 'In Transit' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>}
+                   {result.waybill.status}
+                 </div>
+                 <button 
+                   onClick={() => { setResult(null); setTrackingNumber(''); }}
+                   className="text-[10px] font-bold text-blue-600 hover:text-blue-700 uppercase tracking-wider transition-colors"
+                 >
+                   Search Again
+                 </button>
                </div>
             </div>
 
