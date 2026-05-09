@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Plus, Loader2, Package, Truck, LayoutGrid, CheckCircle2, ChevronDown, MapPin, X } from 'lucide-react'
 import PageHeader from '../PageHeader'
 import { supabase } from '../../lib/supabase'
@@ -25,6 +25,24 @@ const CargoWaybillAllocator: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generated, setGenerated] = useState(false)
 
+  const [primeMovers, setPrimeMovers] = useState<{id: string, status: string}[]>([])
+  const [selectedPrimeMover, setSelectedPrimeMover] = useState('')
+
+  useEffect(() => {
+    const fetchPrimeMovers = async () => {
+      const { data, error } = await supabase
+        .from('prime_movers')
+        .select('id, status')
+        .in('status', ['Active', 'Pier Standby'])
+      
+      if (data && !error) {
+        setPrimeMovers(data)
+        if (data.length > 0) setSelectedPrimeMover(data[0].id)
+      }
+    }
+    fetchPrimeMovers()
+  }, [])
+
   const currentCapacity = items.reduce((acc, item) => acc + CAPACITY_MAP[item.type], 0)
   const isOverCapacity = currentCapacity > 100
 
@@ -45,7 +63,7 @@ const CargoWaybillAllocator: React.FC = () => {
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (items.length === 0 || isOverCapacity || !clientName || !destination) return
+    if (items.length === 0 || isOverCapacity || !clientName || !destination || !selectedPrimeMover) return
     setIsGenerating(true)
     
     try {
@@ -57,7 +75,8 @@ const CargoWaybillAllocator: React.FC = () => {
         origin: 'Central Hub',
         destination: destination,
         container_type: items[0].type,
-        status: 'Loading'
+        status: 'Loading',
+        prime_mover_id: selectedPrimeMover
       })
 
       if (waybillError) throw waybillError
@@ -134,6 +153,27 @@ const CargoWaybillAllocator: React.FC = () => {
                 </div>
               </div>
 
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider ml-1">Assign Prime Mover</label>
+                <div className="relative">
+                   <Truck size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+                   <select 
+                     value={selectedPrimeMover}
+                     onChange={(e) => setSelectedPrimeMover(e.target.value)}
+                     className="w-full appearance-none bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm font-medium rounded-xl pl-11 pr-4 py-3 outline-none transition-all focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                   >
+                     {primeMovers.length === 0 ? (
+                       <option value="" disabled>No available prime movers</option>
+                     ) : (
+                       primeMovers.map(pm => (
+                         <option key={pm.id} value={pm.id}>{pm.id} — {pm.status}</option>
+                       ))
+                     )}
+                   </select>
+                   <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 pointer-events-none" />
+                </div>
+              </div>
+
               <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                 <div className="flex items-end gap-3">
                   <div className="flex-1 space-y-1.5">
@@ -194,7 +234,7 @@ const CargoWaybillAllocator: React.FC = () => {
              <button 
                 type="submit"
                 form="allocator-form"
-                disabled={items.length === 0 || isOverCapacity || !clientName || !destination || isGenerating || generated}
+                disabled={items.length === 0 || isOverCapacity || !clientName || !destination || !selectedPrimeMover || isGenerating || generated}
                 className="w-full h-[52px] bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-600/20 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden relative"
              >
                 {isGenerating ? (

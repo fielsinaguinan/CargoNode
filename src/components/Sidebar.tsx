@@ -15,6 +15,7 @@ import {
   PenTool,
 } from 'lucide-react'
 import type { NavItem } from '../App'
+import { useAuth } from '../contexts/AuthContext'
 
 interface SidebarProps {
   activeNav: NavItem
@@ -86,6 +87,9 @@ const navGroups: NavGroup[] = [
 ]
 
 const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClose }) => {
+  const { user, signOut } = useAuth()
+  const initial = user?.email?.[0].toUpperCase() || 'U'
+
   return (
     <aside
       className={[
@@ -222,32 +226,46 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
       {/* ── Bottom utility links ── */}
       <div className="px-3 py-4 border-t border-white/8 space-y-0.5">
         {[
-          { icon: <Package2 size={16} strokeWidth={1.8} />, label: 'Cargo Inventory' },
-          { icon: <Settings size={16} strokeWidth={1.8} />, label: 'Settings' },
-          { icon: <HelpCircle size={16} strokeWidth={1.8} />, label: 'Help & Support' },
-        ].map((item) => (
-          <button
-            key={item.label}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-500 dark:text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all duration-150"
-          >
-            {item.icon}
-            <span>{item.label}</span>
-          </button>
-        ))}
+          { id: 'inventory' as NavItem, icon: <Package2 size={16} strokeWidth={1.8} />, label: 'Cargo Inventory' },
+          { id: 'settings' as NavItem, icon: <Settings size={16} strokeWidth={1.8} />, label: 'Settings' },
+          { id: 'help' as NavItem, icon: <HelpCircle size={16} strokeWidth={1.8} />, label: 'Help & Support' },
+        ].map((item) => {
+          const isActive = activeNav === item.id
+          return (
+            <button
+              key={item.label}
+              onClick={() => { setActiveNav(item.id); onClose() }}
+              className={[
+                'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150',
+                isActive
+                  ? 'bg-white/10 text-white font-medium'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-200 hover:bg-white/5 font-medium'
+              ].join(' ')}
+            >
+              <span className={isActive ? 'text-blue-400' : ''}>{item.icon}</span>
+              <span>{item.label}</span>
+            </button>
+          )
+        })}
 
         {/* User session row */}
-        <div className="mt-3 flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 cursor-pointer group transition-all duration-150">
+        <div 
+          onClick={() => { setActiveNav('profile'); onClose() }}
+          className="mt-3 flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 cursor-pointer group transition-all duration-150"
+        >
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">
-            JD
+            {initial}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-slate-200 text-xs font-semibold truncate">James Dela Cruz</p>
-            <p className="text-slate-500 dark:text-slate-400 text-[10px] truncate">Fleet Administrator</p>
+            <p className="text-slate-200 text-xs font-semibold truncate">{user?.email || 'Unknown User'}</p>
+            <p className="text-slate-500 dark:text-slate-400 text-[10px] truncate">Administrator</p>
           </div>
-          <LogOut
-            size={14}
-            className="text-slate-600 dark:text-slate-400 group-hover:text-slate-400 transition-colors flex-shrink-0"
-          />
+          <button 
+            onClick={(e) => { e.stopPropagation(); signOut(); }}
+            className="p-1.5 rounded-lg hover:bg-red-500/10 text-slate-600 dark:text-slate-400 hover:text-red-400 transition-colors"
+          >
+            <LogOut size={14} className="flex-shrink-0" />
+          </button>
         </div>
       </div>
     </aside>

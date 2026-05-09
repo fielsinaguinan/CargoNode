@@ -16,9 +16,12 @@ import {
   Moon,
 } from 'lucide-react'
 import { useTheme } from './ThemeProvider'
+import { useAuth } from '../contexts/AuthContext'
+import type { NavItem } from '../App'
 
 interface HeaderProps {
   onMenuClick: () => void
+  onNavigate: (nav: NavItem) => void
 }
 
 interface Notification {
@@ -71,8 +74,9 @@ const notifIcon = (type: Notification['type']) => {
   return <Info size={14} className="text-blue-500" />
 }
 
-const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
+const Header: React.FC<HeaderProps> = ({ onMenuClick, onNavigate }) => {
   const { theme, setTheme } = useTheme()
+  const { user, signOut } = useAuth()
   const [notifOpen, setNotifOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
@@ -80,6 +84,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const profileRef = useRef<HTMLDivElement>(null)
 
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  const initial = user?.email?.[0].toUpperCase() || 'U'
 
   const unread = notifications.filter((n) => !n.read).length
 
@@ -220,11 +225,11 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             aria-label="Profile menu"
           >
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-sm">
-              JD
+              {initial}
             </div>
             <div className="hidden sm:block text-left">
-              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 leading-none">James Dela Cruz</p>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Fleet Administrator</p>
+              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 leading-none truncate max-w-[120px]">{user?.email || 'User'}</p>
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Administrator</p>
             </div>
             <ChevronDown
               size={14}
@@ -241,25 +246,27 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-br from-slate-50 to-white">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white text-sm font-bold shadow">
-                    JD
+                    {initial}
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">James Dela Cruz</p>
+                  <div className="overflow-hidden">
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{user?.email}</p>
                     <div className="flex items-center gap-1 mt-0.5">
                       <Shield size={10} className="text-blue-500" />
-                      <p className="text-[10px] text-blue-600 font-medium">Fleet Administrator</p>
+                      <p className="text-[10px] text-blue-600 font-medium">Administrator</p>
                     </div>
                   </div>
                 </div>
               </div>
               <ul className="py-1.5">
                 {[
-                  { icon: <User size={14} />, label: 'My Profile' },
-                  { icon: <CreditCard size={14} />, label: 'Billing & Plan' },
-                  { icon: <Settings size={14} />, label: 'Account Settings' },
+                  { icon: <User size={14} />, label: 'My Profile', nav: 'profile' as NavItem },
+                  { icon: <Settings size={14} />, label: 'Account Settings', nav: 'settings' as NavItem },
                 ].map((item) => (
                   <li key={item.label}>
-                    <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 transition-colors duration-100">
+                    <button 
+                      onClick={() => { onNavigate(item.nav); setProfileOpen(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 transition-colors duration-100"
+                    >
                       <span className="text-slate-400 dark:text-slate-500">{item.icon}</span>
                       {item.label}
                     </button>
@@ -267,7 +274,10 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                 ))}
               </ul>
               <div className="py-1.5 border-t border-slate-100 dark:border-slate-800">
-                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors duration-100">
+                <button 
+                  onClick={() => signOut()}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors duration-100"
+                >
                   <LogOut size={14} />
                   Sign Out
                 </button>

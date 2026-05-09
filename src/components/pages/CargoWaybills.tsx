@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   FileText,
   Download,
@@ -13,63 +13,74 @@ import {
   Clock,
   AlertTriangle,
   XCircle,
+  Truck,
 } from 'lucide-react'
 import PageHeader from '../PageHeader'
+import { supabase } from '../../lib/supabase'
 
 interface Waybill {
-  id: string
+  tracking_number: string
+  client_name: string
   origin: string
   destination: string
-  shipper: string
-  consignee: string
-  commodity: string
-  weight: string
-  pieces: number
-  date: string
-  status: 'delivered' | 'in-transit' | 'pending' | 'cancelled'
-  value: string
+  container_type: string
+  status: 'Loading' | 'In Transit' | 'Delayed' | 'Delivered'
+  prime_mover_id: string
+  created_at: string
 }
 
-const waybills: Waybill[] = [
-  { id: 'WB-04813', origin: 'Manila',   destination: 'Batangas', shipper: 'NexaCorp Inc.',   consignee: 'BatPharma Ltd.',  commodity: 'Pharmaceutical Supplies', weight: '1.2t',  pieces: 48,  date: '2026-05-08', status: 'pending',    value: '₱92,400' },
-  { id: 'WB-04812', origin: 'Davao',    destination: 'CDO',      shipper: 'SunFarm Co.',     consignee: 'NortherMart',     commodity: 'Fresh Produce',           weight: '8.1t',  pieces: 320, date: '2026-05-07', status: 'in-transit', value: '₱38,600' },
-  { id: 'WB-04811', origin: 'Cebu',     destination: 'Leyte',    shipper: 'AutoBridge PH',   consignee: 'EasternAuto',     commodity: 'Auto Parts',              weight: '5.7t',  pieces: 90,  date: '2026-05-07', status: 'in-transit', value: '₱210,800' },
-  { id: 'WB-04810', origin: 'Manila',   destination: 'Cebu',     shipper: 'TechDist PH',     consignee: 'IslandTech',      commodity: 'Consumer Electronics',    weight: '12.4t', pieces: 640, date: '2026-05-06', status: 'in-transit', value: '₱1,480,000' },
-  { id: 'WB-04809', origin: 'Iloilo',   destination: 'Bacolod',  shipper: 'WeaveCraft',      consignee: 'BacFashion',      commodity: 'Textiles & Garments',     weight: '3.2t',  pieces: 180, date: '2026-05-06', status: 'delivered',  value: '₱64,200' },
-  { id: 'WB-04808', origin: 'Batangas', destination: 'Manila',   shipper: 'ChemSol PH',      consignee: 'ManilaPlant',     commodity: 'Industrial Chemicals',    weight: '18.3t', pieces: 24,  date: '2026-05-05', status: 'delivered',  value: '₱306,000' },
-  { id: 'WB-04807', origin: 'Pampanga', destination: 'Pangasinan', shipper: 'GrainMill PH', consignee: 'PangaStore',      commodity: 'Rice & Grains',           weight: '22.0t', pieces: 880, date: '2026-05-05', status: 'delivered',  value: '₱198,000' },
-  { id: 'WB-04806', origin: 'Manila',   destination: 'Zamboanga', shipper: 'MarineCo.',     consignee: 'ZamboFish',       commodity: 'Fishing Equipment',       weight: '4.5t',  pieces: 60,  date: '2026-05-04', status: 'cancelled',  value: '₱128,500' },
-]
-
 const statusCfg = {
-  delivered:   { label: 'Delivered',   color: 'text-emerald-700 bg-emerald-50 border-emerald-200', icon: <CheckCircle2 size={12} /> },
-  'in-transit': { label: 'In Transit', color: 'text-blue-700 bg-blue-50 border-blue-200',           icon: <Clock size={12} /> },
-  pending:     { label: 'Pending',     color: 'text-amber-700 bg-amber-50 border-amber-200',         icon: <AlertTriangle size={12} /> },
-  cancelled:   { label: 'Cancelled',   color: 'text-red-700 bg-red-50 border-red-200',               icon: <XCircle size={12} /> },
+  Delivered:   { label: 'Delivered',   color: 'text-emerald-700 bg-emerald-50 border-emerald-200', icon: <CheckCircle2 size={12} /> },
+  'In Transit': { label: 'In Transit', color: 'text-blue-700 bg-blue-50 border-blue-200',           icon: <Clock size={12} /> },
+  Loading:     { label: 'Loading',     color: 'text-slate-700 bg-slate-100 border-slate-300',        icon: <Package size={12} /> },
+  Delayed:     { label: 'Delayed',     color: 'text-red-700 bg-red-50 border-red-200',               icon: <AlertTriangle size={12} /> },
 }
 
 const CargoWaybills: React.FC = () => {
+  const [waybills, setWaybills] = useState<Waybill[]>([])
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<string[]>([])
 
+  useEffect(() => {
+    const fetchWaybills = async () => {
+      const { data } = await supabase
+        .from('waybills')
+        .select('*')
+        .order('created_at', { ascending: false })
+      if (data) setWaybills(data as Waybill[])
+    }
+
+    fetchWaybills()
+
+    const channel = supabase
+      .channel('waybills_channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'waybills' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setWaybills(prev => [payload.new as Waybill, ...prev])
+        } else if (payload.eventType === 'UPDATE') {
+          setWaybills(prev => prev.map(w => w.tracking_number === payload.new.tracking_number ? payload.new as Waybill : w))
+        } else if (payload.eventType === 'DELETE') {
+          setWaybills(prev => prev.filter(w => w.tracking_number !== payload.old.tracking_number))
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
+
   const filtered = waybills.filter(
     (w) =>
-      w.id.toLowerCase().includes(search.toLowerCase()) ||
-      w.commodity.toLowerCase().includes(search.toLowerCase()) ||
-      w.shipper.toLowerCase().includes(search.toLowerCase()) ||
+      w.tracking_number.toLowerCase().includes(search.toLowerCase()) ||
+      w.client_name.toLowerCase().includes(search.toLowerCase()) ||
       w.origin.toLowerCase().includes(search.toLowerCase()) ||
-      w.destination.toLowerCase().includes(search.toLowerCase()),
+      w.destination.toLowerCase().includes(search.toLowerCase()) ||
+      w.prime_mover_id?.toLowerCase().includes(search.toLowerCase()),
   )
 
   const toggleSelect = (id: string) =>
     setSelected((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])
-
-  const totalValue = waybills
-    .filter((w) => w.status !== 'cancelled')
-    .reduce((acc, w) => {
-      const num = parseFloat(w.value.replace(/[₱,]/g, ''))
-      return acc + num
-    }, 0)
 
   return (
     <div className="space-y-7">
@@ -93,10 +104,10 @@ const CargoWaybills: React.FC = () => {
       {/* Stats row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Waybills', value: waybills.length.toString(), sub: 'This month', color: 'text-slate-800 dark:text-slate-200' },
-          { label: 'In Transit', value: waybills.filter(w => w.status === 'in-transit').length.toString(), sub: 'Active shipments', color: 'text-blue-700' },
-          { label: 'Delivered', value: waybills.filter(w => w.status === 'delivered').length.toString(), sub: 'Completed today', color: 'text-emerald-700' },
-          { label: 'Cargo Value', value: `₱${(totalValue / 1000000).toFixed(2)}M`, sub: 'Excl. cancelled', color: 'text-violet-700' },
+          { label: 'Total Waybills', value: waybills.length.toString(), sub: 'All records', color: 'text-slate-800 dark:text-slate-200' },
+          { label: 'In Transit', value: waybills.filter(w => w.status === 'In Transit').length.toString(), sub: 'Active shipments', color: 'text-blue-700' },
+          { label: 'Delivered', value: waybills.filter(w => w.status === 'Delivered').length.toString(), sub: 'Completed', color: 'text-emerald-700' },
+          { label: 'Loading', value: waybills.filter(w => w.status === 'Loading').length.toString(), sub: 'Pending dispatch', color: 'text-violet-700' },
         ].map((s) => (
           <div key={s.label} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm px-5 py-4 card-hover">
             <p className={`text-xl font-bold tracking-tight ${s.color} font-[Plus_Jakarta_Sans,sans-serif]`}>{s.value}</p>
@@ -141,12 +152,12 @@ const CargoWaybills: React.FC = () => {
                     type="checkbox"
                     className="rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
                     onChange={(e) =>
-                      setSelected(e.target.checked ? waybills.map((w) => w.id) : [])
+                      setSelected(e.target.checked ? waybills.map((w) => w.tracking_number) : [])
                     }
-                    checked={selected.length === waybills.length}
+                    checked={selected.length > 0 && selected.length === waybills.length}
                   />
                 </th>
-                {['Waybill ID', 'Route', 'Shipper / Consignee', 'Commodity', 'Weight', 'Date', 'Value', 'Status', ''].map((h) => (
+                {['Waybill ID', 'Route', 'Client', 'Container', 'Prime Mover', 'Date', 'Status', ''].map((h) => (
                   <th key={h} className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-4 py-3 whitespace-nowrap">
                     {h}
                   </th>
@@ -155,14 +166,14 @@ const CargoWaybills: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
               {filtered.map((w) => {
-                const cfg = statusCfg[w.status]
-                const isSelected = selected.includes(w.id)
+                const cfg = statusCfg[w.status] || { label: w.status, color: 'text-slate-500 bg-slate-100', icon: null }
+                const isSelected = selected.includes(w.tracking_number)
                 return (
                   <tr
-                    key={w.id}
+                    key={w.tracking_number}
                     className={[
                       'transition-colors duration-100 group',
-                      isSelected ? 'bg-blue-50/50' : 'hover:bg-slate-50/60',
+                      isSelected ? 'bg-blue-50/50' : 'hover:bg-slate-50/60 dark:hover:bg-slate-800/50',
                     ].join(' ')}
                   >
                     <td className="px-6 py-3.5">
@@ -170,39 +181,41 @@ const CargoWaybills: React.FC = () => {
                         type="checkbox"
                         className="rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
                         checked={isSelected}
-                        onChange={() => toggleSelect(w.id)}
+                        onChange={() => toggleSelect(w.tracking_number)}
                       />
                     </td>
                     <td className="px-4 py-3.5 whitespace-nowrap">
-                      <span className="font-mono text-xs text-blue-600 font-semibold">{w.id}</span>
+                      <span className="font-mono text-xs text-blue-600 font-semibold">{w.tracking_number}</span>
                     </td>
                     <td className="px-4 py-3.5 whitespace-nowrap">
                       <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300">
                         <MapPin size={11} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
                         <span className="font-medium">{w.origin}</span>
-                        <span className="text-slate-300">→</span>
+                        <span className="text-slate-300 dark:text-slate-600">→</span>
                         <span>{w.destination}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3.5 whitespace-nowrap">
-                      <p className="text-xs font-medium text-slate-700 dark:text-slate-300">{w.shipper}</p>
-                      <p className="text-[11px] text-slate-400 dark:text-slate-500">{w.consignee}</p>
+                      <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">{w.client_name}</p>
                     </td>
                     <td className="px-4 py-3.5 whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
                         <Package size={11} className="text-slate-400 dark:text-slate-500" />
-                        <p className="text-xs text-slate-700 dark:text-slate-300">{w.commodity}</p>
+                        <p className="text-xs font-medium text-slate-700 dark:text-slate-300">{w.container_type}</p>
                       </div>
-                      <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">{w.pieces} pcs</p>
                     </td>
-                    <td className="px-4 py-3.5 whitespace-nowrap text-xs text-slate-600 dark:text-slate-400">{w.weight}</td>
+                    <td className="px-4 py-3.5 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        <Truck size={11} className="text-slate-400 dark:text-slate-500" />
+                        <p className="text-xs font-medium text-slate-700 dark:text-slate-300">{w.prime_mover_id || 'Unassigned'}</p>
+                      </div>
+                    </td>
                     <td className="px-4 py-3.5 whitespace-nowrap">
                       <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
                         <Calendar size={11} />
-                        {w.date}
+                        {new Date(w.created_at).toLocaleDateString()}
                       </div>
                     </td>
-                    <td className="px-4 py-3.5 whitespace-nowrap text-xs font-semibold text-slate-800 dark:text-slate-200">{w.value}</td>
                     <td className="px-4 py-3.5 whitespace-nowrap">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${cfg.color}`}>
                         {cfg.icon}

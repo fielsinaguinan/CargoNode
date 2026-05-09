@@ -6,6 +6,10 @@ import CargoWaybillAllocator from './pages/CargoWaybillAllocator'
 import Maintenance from './pages/Maintenance'
 import Analytics from './pages/Analytics'
 import FleetDispatchMonitor from './pages/FleetDispatchMonitor'
+import Profile from './pages/Profile'
+import Settings from './pages/Settings'
+import Inventory from './pages/Inventory'
+import Help from './pages/Help'
 
 interface DashboardCanvasProps {
   activeNav: NavItem
@@ -20,6 +24,10 @@ const DashboardCanvas: React.FC<DashboardCanvasProps> = ({ activeNav }) => {
       case 'maintenance':   return <Maintenance />
       case 'analytics':     return <Analytics />
       case 'fleet-monitor': return <FleetDispatchMonitor />
+      case 'profile':       return <Profile />
+      case 'settings':      return <Settings />
+      case 'inventory':     return <Inventory />
+      case 'help':          return <Help />
     }
   }
 
