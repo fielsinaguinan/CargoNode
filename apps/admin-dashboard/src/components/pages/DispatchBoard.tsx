@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Truck,
   MapPin,
@@ -12,150 +12,80 @@ import {
   Filter,
   RefreshCw,
   MoreHorizontal,
+  Calendar,
 } from 'lucide-react'
 import KPICard from '../KPICard'
 import PageHeader from '../PageHeader'
+import { supabase } from '../../lib/supabase'
 
 interface Dispatch {
-  id: string
-  driver: string
-  driverInitials: string
-  truck: string
-  route: string
-  from: string
-  to: string
-  cargo: string
-  weight: string
-  status: 'in-transit' | 'loading' | 'delayed' | 'delivered'
-  eta: string
-  progress: number
+  tracking_number: string
+  origin: string
+  destination: string
+  container_type: string
+  status: 'Loading' | 'In Transit' | 'Delayed' | 'Delivered'
+  created_at: string
+  prime_movers: {
+    id: string
+    plate_number: string
+  } | null
 }
-
-const dispatches: Dispatch[] = [
-  {
-    id: 'DS-00491',
-    driver: 'Rodrigo M.',
-    driverInitials: 'RM',
-    truck: 'PLT-0081',
-    route: 'Manila → Cebu',
-    from: 'Manila',
-    to: 'Cebu',
-    cargo: 'Electronics',
-    weight: '12.4t',
-    status: 'in-transit',
-    eta: '4h 20m',
-    progress: 62,
-  },
-  {
-    id: 'DS-00492',
-    driver: 'Antonio R.',
-    driverInitials: 'AR',
-    truck: 'PLT-0056',
-    route: 'Davao → CDO',
-    from: 'Davao',
-    to: 'CDO',
-    cargo: 'Fresh Produce',
-    weight: '8.1t',
-    status: 'delayed',
-    eta: 'Overdue 2h',
-    progress: 41,
-  },
-  {
-    id: 'DS-00493',
-    driver: 'Maria S.',
-    driverInitials: 'MS',
-    truck: 'PLT-0033',
-    route: 'Cebu → Leyte',
-    from: 'Cebu',
-    to: 'Leyte',
-    cargo: 'Auto Parts',
-    weight: '5.7t',
-    status: 'loading',
-    eta: '—',
-    progress: 0,
-  },
-  {
-    id: 'DS-00490',
-    driver: 'Joel T.',
-    driverInitials: 'JT',
-    truck: 'PLT-0072',
-    route: 'Batangas → Manila',
-    from: 'Batangas',
-    to: 'Manila',
-    cargo: 'Chemicals',
-    weight: '18.3t',
-    status: 'delivered',
-    eta: 'Done',
-    progress: 100,
-  },
-  {
-    id: 'DS-00488',
-    driver: 'Liza P.',
-    driverInitials: 'LP',
-    truck: 'PLT-0019',
-    route: 'Iloilo → Bacolod',
-    from: 'Iloilo',
-    to: 'Bacolod',
-    cargo: 'Textiles',
-    weight: '3.2t',
-    status: 'in-transit',
-    eta: '55m',
-    progress: 88,
-  },
-]
 
 const statusConfig = {
-  'in-transit': { label: 'In Transit', color: 'text-blue-700 bg-blue-50 border-blue-200', dot: 'bg-blue-500' },
-  loading:      { label: 'Loading',    color: 'text-amber-700 bg-amber-50 border-amber-200', dot: 'bg-amber-500' },
-  delayed:      { label: 'Delayed',    color: 'text-red-700 bg-red-50 border-red-200', dot: 'bg-red-500' },
-  delivered:    { label: 'Delivered',  color: 'text-emerald-700 bg-emerald-50 border-emerald-200', dot: 'bg-emerald-500' },
+  'In Transit': { label: 'In Transit', color: 'text-blue-700 bg-blue-50 border-blue-200', dot: 'bg-blue-500' },
+  Loading:      { label: 'Loading',    color: 'text-amber-700 bg-amber-50 border-amber-200', dot: 'bg-amber-500' },
+  Delayed:      { label: 'Delayed',    color: 'text-red-700 bg-red-50 border-red-200', dot: 'bg-red-500' },
+  Delivered:    { label: 'Delivered',  color: 'text-emerald-700 bg-emerald-50 border-emerald-200', dot: 'bg-emerald-500' },
 }
-
-const kpis = [
-  {
-    label: 'Active Dispatches',
-    value: '31',
-    sub: '+4 from yesterday',
-    trend: 'up' as const,
-    icon: <Truck size={18} />,
-    accent: 'from-blue-500 to-indigo-500',
-    iconBg: 'bg-blue-50 text-blue-600',
-  },
-  {
-    label: 'Deliveries Today',
-    value: '18',
-    sub: '94% on-time rate',
-    trend: 'up' as const,
-    icon: <CheckCircle2 size={18} />,
-    accent: 'from-emerald-500 to-teal-500',
-    iconBg: 'bg-emerald-50 text-emerald-600',
-  },
-  {
-    label: 'Active Alerts',
-    value: '3',
-    sub: '2 require action',
-    trend: 'down' as const,
-    icon: <AlertTriangle size={18} />,
-    accent: 'from-amber-500 to-orange-500',
-    iconBg: 'bg-amber-50 text-amber-600',
-  },
-  {
-    label: 'Total Tonnage',
-    value: '284t',
-    sub: 'Across all routes',
-    trend: 'up' as const,
-    icon: <Package size={18} />,
-    accent: 'from-violet-500 to-purple-500',
-    iconBg: 'bg-violet-50 text-violet-600',
-  },
-]
 
 const DispatchBoard: React.FC = () => {
   const [filter, setFilter] = useState<string>('all')
+  const [waybills, setWaybills] = useState<Dispatch[]>([])
+
+  const fetchWaybills = async () => {
+    const { data } = await supabase
+      .from('waybills')
+      .select(`
+        tracking_number, origin, destination, container_type, status, created_at,
+        prime_movers ( id, plate_number )
+      `)
+      .order('created_at', { ascending: false })
+    if (data) setWaybills(data as Dispatch[])
+  }
+
+  useEffect(() => {
+    fetchWaybills()
+
+    const channel = supabase
+      .channel('dispatch_board_channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'waybills' }, () => {
+        fetchWaybills()
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
 
   const filtered = filter === 'all'
-    ? dispatches
-    : dispatches.filter((d) => d.status === filter)
+    ? waybills
+    : waybills.filter((d) => d.status.toLowerCase().replace(' ', '-') === filter)
+
+  // Computed KPIs
+  const activeDispatches = waybills.filter(w => w.status === 'Loading' || w.status === 'In Transit').length
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const deliveriesToday = waybills.filter(w => w.status === 'Delivered' && new Date(w.created_at) >= today).length
+  const activeAlerts = waybills.filter(w => w.status === 'Delayed').length
+  const totalContainers = waybills.length
+
+  const kpis = [
+    { label: 'Active Dispatches', value: activeDispatches.toString(), sub: 'Currently assigned', trend: 'up' as const, icon: <Truck size={18} />, accent: 'from-blue-500 to-indigo-500', iconBg: 'bg-blue-50 text-blue-600' },
+    { label: 'Deliveries Today', value: deliveriesToday.toString(), sub: 'Since 12:00 AM', trend: 'up' as const, icon: <CheckCircle2 size={18} />, accent: 'from-emerald-500 to-teal-500', iconBg: 'bg-emerald-50 text-emerald-600' },
+    { label: 'Active Alerts', value: activeAlerts.toString(), sub: 'Requires action', trend: 'down' as const, icon: <AlertTriangle size={18} />, accent: 'from-amber-500 to-orange-500', iconBg: 'bg-amber-50 text-amber-600' },
+    { label: 'Total Containers', value: totalContainers.toString(), sub: 'All recorded containers', trend: 'up' as const, icon: <Package size={18} />, accent: 'from-violet-500 to-purple-500', iconBg: 'bg-violet-50 text-violet-600' },
+  ]
 
   return (
     <div className="space-y-7">
@@ -247,10 +177,7 @@ const DispatchBoard: React.FC = () => {
                 </button>
               ))}
             </div>
-            <button className="p-2 rounded-xl text-slate-400 dark:text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
-              <Filter size={15} />
-            </button>
-            <button className="p-2 rounded-xl text-slate-400 dark:text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+            <button onClick={fetchWaybills} className="p-2 rounded-xl text-slate-400 dark:text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
               <RefreshCw size={15} />
             </button>
           </div>
@@ -261,7 +188,7 @@ const DispatchBoard: React.FC = () => {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left border-b border-slate-100 dark:border-slate-800">
-                {['Dispatch ID', 'Driver / Truck', 'Route', 'Cargo', 'Progress', 'ETA', 'Status', ''].map((h) => (
+                {['Tracking Number', 'Truck Details', 'Route', 'Container', 'Dispatch Date', 'Status', ''].map((h) => (
                   <th key={h} className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-6 py-3 whitespace-nowrap">
                     {h}
                   </th>
@@ -270,63 +197,45 @@ const DispatchBoard: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
               {filtered.map((d) => {
-                const cfg = statusConfig[d.status]
+                const cfg = statusConfig[d.status] || { label: d.status, color: 'text-slate-500 bg-slate-100', dot: 'bg-slate-400' }
                 return (
-                  <tr key={d.id} className="hover:bg-slate-50/70 transition-colors duration-100 group">
+                  <tr key={d.tracking_number} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors duration-100 group">
                     {/* ID */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="font-mono text-xs text-slate-500 dark:text-slate-400 font-medium">{d.id}</span>
+                      <span className="font-mono text-xs text-blue-600 font-semibold">{d.tracking_number}</span>
                     </td>
-                    {/* Driver */}
+                    {/* Truck Details */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-slate-600 dark:text-slate-400 text-xs font-bold flex-shrink-0">
-                          {d.driverInitials}
+                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 flex-shrink-0">
+                          <Truck size={14} />
                         </div>
                         <div>
-                          <p className="text-slate-800 dark:text-slate-200 font-medium text-xs">{d.driver}</p>
-                          <p className="text-slate-400 dark:text-slate-500 text-[11px]">{d.truck}</p>
+                          <p className="text-slate-800 dark:text-slate-200 font-bold text-xs">{d.prime_movers?.plate_number || 'Unassigned'}</p>
                         </div>
                       </div>
                     </td>
                     {/* Route */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+                      <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300">
                         <MapPin size={11} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
-                        {d.route}
+                        <span className="font-medium">{d.origin}</span>
+                        <span className="text-slate-300 dark:text-slate-600">→</span>
+                        <span>{d.destination}</span>
                       </div>
                     </td>
-                    {/* Cargo */}
+                    {/* Container */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <p className="text-xs text-slate-700 dark:text-slate-300">{d.cargo}</p>
-                      <p className="text-[11px] text-slate-400 dark:text-slate-500">{d.weight}</p>
-                    </td>
-                    {/* Progress */}
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[120px]">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                          <div
-                            className={[
-                              'h-full rounded-full transition-all duration-500',
-                              d.status === 'delayed'
-                                ? 'bg-red-400'
-                                : d.status === 'delivered'
-                                ? 'bg-emerald-400'
-                                : 'bg-blue-400',
-                            ].join(' ')}
-                            style={{ width: `${d.progress}%` }}
-                          />
-                        </div>
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400 w-8 text-right">{d.progress}%</span>
+                      <div className="flex items-center gap-1.5">
+                        <Package size={11} className="text-slate-400 dark:text-slate-500" />
+                        <p className="text-xs font-medium text-slate-700 dark:text-slate-300">{d.container_type}</p>
                       </div>
                     </td>
-                    {/* ETA */}
+                    {/* Date */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400">
-                        <Clock size={11} className="text-slate-400 dark:text-slate-500" />
-                        <span className={d.status === 'delayed' ? 'text-red-600 font-semibold' : ''}>
-                          {d.eta}
-                        </span>
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                        <Calendar size={11} />
+                        {new Date(d.created_at).toLocaleDateString()}
                       </div>
                     </td>
                     {/* Status badge */}
@@ -351,7 +260,7 @@ const DispatchBoard: React.FC = () => {
 
         {/* Table footer */}
         <div className="flex items-center justify-between px-6 py-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50">
-          <p className="text-xs text-slate-400 dark:text-slate-500">Showing {filtered.length} of {dispatches.length} records</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500">Showing {filtered.length} of {waybills.length} records</p>
           <button className="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors">
             View all dispatches
             <ArrowUpRight size={12} />

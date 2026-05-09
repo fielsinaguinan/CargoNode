@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   BarChart3,
   TrendingUp,
@@ -14,6 +14,7 @@ import {
   Calendar,
 } from 'lucide-react'
 import PageHeader from '../PageHeader'
+import { supabase } from '../../lib/supabase'
 
 // Simple bar chart via SVG
 const MiniBarChart: React.FC<{ data: number[]; color: string }> = ({ data, color }) => {
@@ -59,11 +60,24 @@ const Sparkline: React.FC<{ data: number[]; color: string }> = ({ data, color })
   )
 }
 
+interface Waybill {
+  tracking_number: string
+  origin: string
+  destination: string
+  status: string
+  freight_rate: number
+  created_at: string
+}
+
+interface PrimeMover {
+  id: string
+  status: string
+  fuel_allowance: number
+}
+
 const weeks = ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8']
 const deliveries = [82, 91, 78, 108, 95, 114, 103, 128]
 const revenue    = [1.2, 1.5, 1.1, 1.8, 1.6, 2.1, 1.9, 2.4]
-const fuelCost   = [0.38, 0.41, 0.36, 0.45, 0.42, 0.48, 0.44, 0.52]
-const onTime     = [88, 91, 85, 93, 90, 94, 92, 96]
 
 const topRoutes = [
   { route: 'Manila → Cebu',     volume: '340 trips', share: 28, revenue: '₱4.8M' },
@@ -73,55 +87,114 @@ const topRoutes = [
   { route: 'Batangas → Manila', volume: '98 trips',  share: 8,  revenue: '₱1.8M' },
 ]
 
-const kpiCards = [
-  {
-    label: 'Total Revenue',
-    value: '₱12.4M',
-    change: '+18.2%',
-    up: true,
-    sub: 'vs. last month',
-    data: revenue,
-    color: '#3b82f6',
-    icon: <DollarSign size={16} />,
-    iconBg: 'bg-blue-50 text-blue-600',
-  },
-  {
-    label: 'Deliveries Completed',
-    value: '799',
-    change: '+24.1%',
-    up: true,
-    sub: 'This quarter',
-    data: deliveries,
-    color: '#10b981',
-    icon: <Package size={16} />,
-    iconBg: 'bg-emerald-50 text-emerald-600',
-  },
-  {
-    label: 'Fuel Cost',
-    value: '₱3.46M',
-    change: '+8.4%',
-    up: false,
-    sub: 'vs. last quarter',
-    data: fuelCost,
-    color: '#f59e0b',
-    icon: <Activity size={16} />,
-    iconBg: 'bg-amber-50 text-amber-600',
-  },
-  {
-    label: 'On-Time Rate',
-    value: '92.8%',
-    change: '+4.2%',
-    up: true,
-    sub: 'Avg. last 8 weeks',
-    data: onTime,
-    color: '#8b5cf6',
-    icon: <Clock size={16} />,
-    iconBg: 'bg-violet-50 text-violet-600',
-  },
-]
-
 const Analytics: React.FC = () => {
   const [period, setPeriod] = useState<'week' | 'month' | 'quarter'>('quarter')
+  
+  const [waybills, setWaybills] = useState<Waybill[]>([])
+  const [primeMovers, setPrimeMovers] = useState<PrimeMover[]>([])
+
+  const fetchAnalyticsData = async () => {
+    const { data: wData } = await supabase.from('waybills').select('tracking_number, origin, destination, status, freight_rate, created_at')
+    const { data: pData } = await supabase.from('prime_movers').select('id, status, fuel_allowance')
+    
+    if (wData) setWaybills(wData as Waybill[])
+    if (pData) setPrimeMovers(pData as PrimeMover[])
+  }
+
+  useEffect(() => {
+    fetchAnalyticsData()
+
+    const channel = supabase.channel('analytics_channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'waybills' }, () => fetchAnalyticsData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'prime_movers' }, () => fetchAnalyticsData())
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
+
+  // KPI Calculations
+  const grossRevenue = waybills.reduce((sum, w) => sum + (w.freight_rate || 0), 0)
+  const activeFleet = primeMovers.filter(pm => pm.status === 'Active' || pm.status === 'Pier Standby')
+  const totalFuelCost = activeFleet.reduce((sum, pm) => sum + (pm.fuel_allowance || 0), 0)
+  const netProfit = grossRevenue - totalFuelCost
+  const deliveriesCompleted = waybills.filter(w => w.status === 'Delivered').length
+
+  const formatCurrency = (val: number) => {
+    if (val >= 1000000) return `₱${(val / 1000000).toFixed(2)}M`
+    if (val >= 1000) return `₱${(val / 1000).toFixed(1)}k`
+    return `₱${val}`
+  }
+
+  const kpiCards = [
+    {
+      label: 'Gross Revenue',
+      value: formatCurrency(grossRevenue),
+      change: '+Realtime',
+      up: true,
+      sub: 'All shipments',
+      data: [1.2, 1.5, 1.1, 1.8, 1.6, 2.1, 1.9, 2.4],
+      color: '#3b82f6',
+      icon: <DollarSign size={16} />,
+      iconBg: 'bg-blue-50 text-blue-600',
+    },
+    {
+      label: 'Total Fuel Costs',
+      value: formatCurrency(totalFuelCost),
+      change: 'Active Fleet',
+      up: false,
+      sub: 'Estimated allowance',
+      data: [0.38, 0.41, 0.36, 0.45, 0.42, 0.48, 0.44, 0.52],
+      color: '#f59e0b',
+      icon: <Activity size={16} />,
+      iconBg: 'bg-amber-50 text-amber-600',
+    },
+    {
+      label: 'Net Profit Estimate',
+      value: formatCurrency(netProfit),
+      change: '+Dynamic',
+      up: netProfit >= 0,
+      sub: 'Revenue minus Fuel',
+      data: [82, 91, 78, 108, 95, 114, 103, 128],
+      color: '#10b981',
+      icon: <TrendingUp size={16} />,
+      iconBg: 'bg-emerald-50 text-emerald-600',
+    },
+    {
+      label: 'Deliveries Completed',
+      value: deliveriesCompleted.toString(),
+      change: 'Live',
+      up: true,
+      sub: 'Total staging',
+      data: [88, 91, 85, 93, 90, 94, 92, 96],
+      color: '#8b5cf6',
+      icon: <Package size={16} />,
+      iconBg: 'bg-violet-50 text-violet-600',
+    },
+  ]
+
+  // Top Routes Calculation
+  const routes = waybills.reduce((acc, w) => {
+    const route = `${w.origin} → ${w.destination}`
+    if (!acc[route]) acc[route] = { volume: 0, revenue: 0 }
+    acc[route].volume += 1
+    acc[route].revenue += w.freight_rate || 0
+    return acc
+  }, {} as Record<string, { volume: number; revenue: number }>)
+
+  const dynamicTopRoutes = Object.entries(routes)
+    .sort((a, b) => b[1].volume - a[1].volume)
+    .slice(0, 5)
+    .map(([route, data]) => ({
+      route,
+      volume: `${data.volume} trips`,
+      share: Math.min(100, (data.volume / (waybills.length || 1)) * 100),
+      revenue: formatCurrency(data.revenue)
+    }))
+
+  // Fallback to mock if empty
+  const displayRoutes = dynamicTopRoutes.length > 0 ? dynamicTopRoutes : topRoutes
 
   return (
     <div className="space-y-7">
@@ -300,7 +373,7 @@ const Analytics: React.FC = () => {
             <Map size={15} className="text-slate-300" />
           </div>
           <div className="divide-y divide-slate-50 dark:divide-slate-800/50">
-            {topRoutes.map((r, i) => (
+            {displayRoutes.map((r, i) => (
               <div key={r.route} className="px-6 py-3.5 hover:bg-slate-50/60 transition-colors">
                 <div className="flex items-center gap-3">
                   <span className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold flex items-center justify-center flex-shrink-0">

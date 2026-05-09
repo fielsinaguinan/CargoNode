@@ -33,7 +33,7 @@ const DashboardLayout: React.FC = () => {
       {/* Main area */}
       <div className="flex flex-col flex-1 min-w-0 lg:ml-[260px]">
         <Header onMenuClick={() => setSidebarOpen(true)} onNavigate={(nav) => setActiveNav(nav)} />
-        <DashboardCanvas activeNav={activeNav} />
+        <DashboardCanvas activeNav={activeNav} setActiveNav={setActiveNav} />
       </div>
     </div>
   )

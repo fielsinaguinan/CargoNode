@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import PageHeader from '../PageHeader'
 import { supabase } from '../../lib/supabase'
+import type { NavItem } from '../../App'
 
 interface Waybill {
   tracking_number: string
@@ -36,7 +37,11 @@ const statusCfg = {
   Delayed:     { label: 'Delayed',     color: 'text-red-700 bg-red-50 border-red-200',               icon: <AlertTriangle size={12} /> },
 }
 
-const CargoWaybills: React.FC = () => {
+interface CargoWaybillsProps {
+  setActiveNav?: (nav: NavItem) => void
+}
+
+const CargoWaybills: React.FC<CargoWaybillsProps> = ({ setActiveNav }) => {
   const [waybills, setWaybills] = useState<Waybill[]>([])
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<string[]>([])
@@ -82,6 +87,29 @@ const CargoWaybills: React.FC = () => {
   const toggleSelect = (id: string) =>
     setSelected((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])
 
+  const handleExport = () => {
+    if (waybills.length === 0) return
+    const headers = ['Tracking Number', 'Origin', 'Destination', 'Client Name', 'Container Type', 'Prime Mover ID', 'Status', 'Date']
+    const rows = waybills.map(w => [
+      w.tracking_number, 
+      `"${w.origin}"`, 
+      `"${w.destination}"`, 
+      `"${w.client_name}"`, 
+      w.container_type, 
+      w.prime_mover_id || 'Unassigned', 
+      w.status, 
+      new Date(w.created_at).toLocaleDateString()
+    ])
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.setAttribute('download', 'cargo_waybills_export.csv')
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   return (
     <div className="space-y-7">
       <PageHeader
@@ -89,11 +117,17 @@ const CargoWaybills: React.FC = () => {
         subtitle="Manage and track all freight waybills and shipping documents"
         actions={
           <>
-            <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-150">
+            <button 
+              onClick={handleExport}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-150"
+            >
               <Download size={15} />
               Export
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-200 transition-all duration-150">
+            <button 
+              onClick={() => setActiveNav?.('allocator')}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-200 transition-all duration-150"
+            >
               <Plus size={15} />
               New Waybill
             </button>

@@ -20,6 +20,7 @@ const CAPACITY_MAP: Record<ContainerType, number> = {
 const CargoWaybillAllocator: React.FC = () => {
   const [clientName, setClientName] = useState('')
   const [destination, setDestination] = useState('')
+  const [freightRate, setFreightRate] = useState('')
   const [selectedType, setSelectedType] = useState<ContainerType>('20-footer')
   const [items, setItems] = useState<AllocationItem[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
@@ -76,7 +77,8 @@ const CargoWaybillAllocator: React.FC = () => {
         destination: destination,
         container_type: items[0].type,
         status: 'Loading',
-        prime_mover_id: selectedPrimeMover
+        prime_mover_id: selectedPrimeMover,
+        freight_rate: parseFloat(freightRate) || 0,
       })
 
       if (waybillError) throw waybillError
@@ -97,6 +99,7 @@ const CargoWaybillAllocator: React.FC = () => {
         setGenerated(false)
         setClientName('')
         setDestination('')
+        setFreightRate('')
         setItems([])
       }, 3000)
     } catch (error) {
@@ -148,6 +151,20 @@ const CargoWaybillAllocator: React.FC = () => {
                      value={destination}
                      onChange={(e) => setDestination(e.target.value)}
                      placeholder="e.g. Pier 4 to Laguna Warehouse"
+                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm rounded-xl pl-11 pr-4 py-3 outline-none transition-all focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 placeholder-slate-400"
+                   />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider ml-1">Freight Rate (₱)</label>
+                <div className="relative">
+                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 font-medium">₱</span>
+                   <input 
+                     type="number" 
+                     value={freightRate}
+                     onChange={(e) => setFreightRate(e.target.value)}
+                     placeholder="e.g. 20000"
                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm rounded-xl pl-11 pr-4 py-3 outline-none transition-all focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 placeholder-slate-400"
                    />
                 </div>
@@ -234,7 +251,7 @@ const CargoWaybillAllocator: React.FC = () => {
              <button 
                 type="submit"
                 form="allocator-form"
-                disabled={items.length === 0 || isOverCapacity || !clientName || !destination || !selectedPrimeMover || isGenerating || generated}
+                disabled={items.length === 0 || isOverCapacity || !clientName || !destination || !freightRate || !selectedPrimeMover || isGenerating || generated}
                 className="w-full h-[52px] bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-600/20 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden relative"
              >
                 {isGenerating ? (
