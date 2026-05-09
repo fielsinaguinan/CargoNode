@@ -1,29 +1,79 @@
-import React, { useState } from 'react'
-import { Search, MapPin, Truck, Check, Loader2 } from 'lucide-react'
-
-// Mock Data
-const milestones = [
-  { id: 1, title: 'Manifest Generated', time: 'Aug 14, 08:30 AM', status: 'completed', location: 'Manila Port Area' },
-  { id: 2, title: 'Departed Pier', time: 'Aug 14, 10:15 AM', status: 'completed', location: 'Pier 4 Gate' },
-  { id: 3, title: 'In Transit (NLEX)', time: 'Aug 14, 11:45 AM', status: 'current', location: 'NLEX Southbound' },
-  { id: 4, title: 'Arrived at Drop-off', time: 'Est. 02:00 PM', status: 'pending', location: 'Laguna Warehouse' },
-]
+import React, { useState, useEffect } from 'react'
+import { Search, MapPin, Truck, Check, Loader2, AlertCircle } from 'lucide-react'
+import { supabase } from './lib/supabase'
 
 function App() {
   const [trackingNumber, setTrackingNumber] = useState('')
   const [isSearching, setIsSearching] = useState(false)
-  const [result, setResult] = useState<typeof milestones | null>(null)
+  const [result, setResult] = useState<{ waybill: any, milestones: any[] } | null>(null)
+  const [error, setError] = useState('')
 
-  const handleTrack = (e: React.FormEvent) => {
+  const handleTrack = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!trackingNumber) return
     setIsSearching(true)
     setResult(null)
-    setTimeout(() => {
+    setError('')
+    
+    try {
+      // 1. Fetch Waybill (Public Read enabled via RLS)
+      const { data: waybill, error: waybillError } = await supabase
+        .from('waybills')
+        .select('*')
+        .eq('tracking_number', trackingNumber.toUpperCase())
+        .single()
+
+      if (waybillError || !waybill) {
+        throw new Error('Waybill not found')
+      }
+
+      // 2. Fetch tracking milestones
+      const { data: milestones, error: milestonesError } = await supabase
+        .from('tracking_milestones')
+        .select('*')
+        .eq('waybill_id', waybill.tracking_number)
+        .order('order_index', { ascending: true })
+
+      if (milestonesError) throw milestonesError
+
+      setResult({ waybill, milestones: milestones || [] })
+    } catch (err) {
+      console.error(err)
+      setError('We could not find a dispatch manifest with that tracking number. Please check and try again.')
+    } finally {
       setIsSearching(false)
-      setResult(milestones)
-    }, 1200)
+    }
   }
+
+  // Subscribe to live updates if we have a result
+  useEffect(() => {
+    if (!result?.waybill) return
+
+    const channel = supabase.channel(`public:waybill:${result.waybill.tracking_number}`)
+      .on('postgres', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'tracking_milestones', 
+        filter: `waybill_id=eq.${result.waybill.tracking_number}` 
+      }, async () => {
+         // Re-fetch milestones if they change
+         const { data: newMilestones } = await supabase
+           .from('tracking_milestones')
+           .select('*')
+           .eq('waybill_id', result.waybill.tracking_number)
+           .order('order_index', { ascending: true })
+         
+         if (newMilestones) {
+            setResult(prev => prev ? { ...prev, milestones: newMilestones } : null)
+         }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [result?.waybill?.tracking_number])
+
 
   return (
     <div className="max-w-[420px] mx-auto min-h-screen bg-slate-50 shadow-2xl relative flex flex-col overflow-hidden border-x border-slate-200">
@@ -57,9 +107,14 @@ function App() {
                 value={trackingNumber}
                 onChange={(e) => setTrackingNumber(e.target.value)}
                 placeholder="Waybill Tracking Number" 
-                className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-11 pr-4 text-sm font-medium text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm"
+                className={`w-full bg-white border ${error ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'} rounded-2xl py-4 pl-11 pr-4 text-sm font-medium text-slate-800 placeholder-slate-400 outline-none focus:ring-4 transition-all shadow-sm`}
               />
             </div>
+            {error && (
+               <p className="text-xs text-red-500 font-medium flex items-start gap-1.5 animate-fade-in-down">
+                 <AlertCircle size={14} className="mt-0.5 shrink-0" /> {error}
+               </p>
+            )}
             <button 
               type="submit"
               disabled={!trackingNumber || isSearching}
@@ -76,11 +131,17 @@ function App() {
             <div className="flex items-center justify-between mb-6 border-b border-slate-50 pb-4">
                <div>
                  <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-0.5">Waybill</p>
-                 <p className="text-sm font-bold text-slate-800 font-mono tracking-tight">{trackingNumber.toUpperCase()}</p>
+                 <p className="text-sm font-bold text-slate-800 font-mono tracking-tight">{result.waybill.tracking_number.toUpperCase()}</p>
+                 <p className="text-[10px] text-slate-500 font-medium mt-1">To: {result.waybill.client_name}</p>
                </div>
-               <div className="bg-emerald-50 border border-emerald-100 text-emerald-600 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5">
-                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                 In Transit
+               <div className={`border px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${
+                 result.waybill.status === 'In Transit' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
+                 result.waybill.status === 'Delayed' ? 'bg-red-50 border-red-100 text-red-600' :
+                 result.waybill.status === 'Delivered' ? 'bg-slate-50 border-slate-200 text-slate-600' :
+                 'bg-blue-50 border-blue-100 text-blue-600'
+               }`}>
+                 {result.waybill.status === 'In Transit' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>}
+                 {result.waybill.status}
                </div>
             </div>
 
@@ -88,57 +149,63 @@ function App() {
               {/* Vertical Line */}
               <div className="absolute left-[19px] top-4 bottom-6 w-0.5 bg-slate-100"></div>
 
-              <div className="space-y-7">
-                {result.map((item, index) => {
-                  const isCompleted = item.status === 'completed'
-                  const isCurrent = item.status === 'current'
-                  const isPending = item.status === 'pending'
+              {result.milestones.length === 0 ? (
+                 <p className="text-xs text-slate-400 py-4 italic text-center">No timeline events recorded yet.</p>
+              ) : (
+                <div className="space-y-7">
+                  {result.milestones.map((item: any, index: number) => {
+                    const isCompleted = item.status === 'completed'
+                    const isCurrent = item.status === 'current'
+                    const isPending = item.status === 'pending'
+                    const dateObj = new Date(item.timestamp)
+                    const timeString = isNaN(dateObj.getTime()) ? 'Pending' : dateObj.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 
-                  return (
-                    <div 
-                      key={item.id} 
-                      className="relative flex items-start gap-4 animate-fade-in-up"
-                      style={{ opacity: 0, animationDelay: `${index * 150}ms` }}
-                    >
-                      {/* Node */}
-                      <div className="relative z-10 flex-shrink-0 mt-0.5 -ml-[18px]">
-                        {isCompleted && (
-                          <div className="w-8 h-8 rounded-full bg-emerald-500 border-[3px] border-white flex items-center justify-center shadow-sm">
-                            <Check size={14} className="text-white" strokeWidth={3} />
-                          </div>
-                        )}
-                        {isCurrent && (
-                          <div className="w-8 h-8 rounded-full bg-blue-100 border-[3px] border-white flex items-center justify-center relative shadow-sm">
-                            <span className="absolute inset-0 rounded-full bg-blue-400 animate-ping opacity-40"></span>
-                            <div className="w-3 h-3 rounded-full bg-blue-600"></div>
-                          </div>
-                        )}
-                        {isPending && (
-                          <div className="w-8 h-8 rounded-full bg-slate-100 border-[3px] border-white flex items-center justify-center">
-                            <div className="w-2.5 h-2.5 rounded-full bg-slate-300"></div>
-                          </div>
-                        )}
-                      </div>
+                    return (
+                      <div 
+                        key={item.id} 
+                        className="relative flex items-start gap-4 animate-fade-in-up"
+                        style={{ opacity: 0, animationDelay: `${index * 150}ms` }}
+                      >
+                        {/* Node */}
+                        <div className="relative z-10 flex-shrink-0 mt-0.5 -ml-[18px]">
+                          {isCompleted && (
+                            <div className="w-8 h-8 rounded-full bg-emerald-500 border-[3px] border-white flex items-center justify-center shadow-sm">
+                              <Check size={14} className="text-white" strokeWidth={3} />
+                            </div>
+                          )}
+                          {isCurrent && (
+                            <div className="w-8 h-8 rounded-full bg-blue-100 border-[3px] border-white flex items-center justify-center relative shadow-sm">
+                              <span className="absolute inset-0 rounded-full bg-blue-400 animate-ping opacity-40"></span>
+                              <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+                            </div>
+                          )}
+                          {isPending && (
+                            <div className="w-8 h-8 rounded-full bg-slate-100 border-[3px] border-white flex items-center justify-center">
+                              <div className="w-2.5 h-2.5 rounded-full bg-slate-300"></div>
+                            </div>
+                          )}
+                        </div>
 
-                      {/* Content */}
-                      <div className="flex-1 pb-1">
-                        <p className={`text-sm font-bold ${isPending ? 'text-slate-400' : 'text-slate-800'}`}>
-                          {item.title}
-                        </p>
-                        <p className={`text-[11px] font-semibold mt-1 ${isPending ? 'text-slate-400' : 'text-blue-600'}`}>
-                          {item.time}
-                        </p>
-                        <div className="flex items-center gap-1.5 mt-2">
-                          <MapPin size={12} className={isPending ? 'text-slate-300' : 'text-slate-400'} />
-                          <span className={`text-[11px] font-medium ${isPending ? 'text-slate-400' : 'text-slate-500'}`}>
-                            {item.location}
-                          </span>
+                        {/* Content */}
+                        <div className="flex-1 pb-1">
+                          <p className={`text-sm font-bold ${isPending ? 'text-slate-400' : 'text-slate-800'}`}>
+                            {item.title}
+                          </p>
+                          <p className={`text-[11px] font-semibold mt-1 ${isPending ? 'text-slate-400' : 'text-blue-600'}`}>
+                            {timeString}
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-2">
+                            <MapPin size={12} className={isPending ? 'text-slate-300' : 'text-slate-400'} />
+                            <span className={`text-[11px] font-medium ${isPending ? 'text-slate-400' : 'text-slate-500'}`}>
+                              {item.location || 'Unknown'}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
         )}

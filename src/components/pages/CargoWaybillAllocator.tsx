@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Plus, Loader2, Package, Truck, LayoutGrid, CheckCircle2, ChevronDown, MapPin, X } from 'lucide-react'
 import PageHeader from '../PageHeader'
+import { supabase } from '../../lib/supabase'
 
 type ContainerType = '20-footer' | '40-footer' | 'LCL'
 
@@ -42,12 +43,35 @@ const CargoWaybillAllocator: React.FC = () => {
     setItems(items.filter(item => item.id !== id))
   }
 
-  const handleGenerate = (e: React.FormEvent) => {
+  const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault()
     if (items.length === 0 || isOverCapacity || !clientName || !destination) return
     setIsGenerating(true)
-    setTimeout(() => {
-      setIsGenerating(false)
+    
+    try {
+      const trackingNumber = `WAY-${Math.random().toString(36).substr(2, 6).toUpperCase()}`
+      
+      const { error: waybillError } = await supabase.from('waybills').insert({
+        tracking_number: trackingNumber,
+        client_name: clientName,
+        origin: 'Central Hub',
+        destination: destination,
+        container_type: items[0].type,
+        status: 'Loading'
+      })
+
+      if (waybillError) throw waybillError
+
+      const { error: milestoneError } = await supabase.from('tracking_milestones').insert({
+        waybill_id: trackingNumber,
+        title: 'Manifest Generated',
+        location: 'Central Hub',
+        status: 'completed',
+        order_index: 1
+      })
+
+      if (milestoneError) throw milestoneError
+
       setGenerated(true)
       // Reset form after short delay
       setTimeout(() => {
@@ -56,7 +80,12 @@ const CargoWaybillAllocator: React.FC = () => {
         setDestination('')
         setItems([])
       }, 3000)
-    }, 1500)
+    } catch (error) {
+      console.error('Error generating waybill:', error)
+      alert('Database insertion failed. Have you run the Supabase schema migrations?')
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   return (
