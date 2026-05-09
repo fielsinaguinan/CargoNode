@@ -13,7 +13,9 @@ import {
   CheckCircle2,
   AlertTriangle,
   Info,
+  Moon,
 } from 'lucide-react'
+import { useTheme } from './ThemeProvider'
 
 interface HeaderProps {
   onMenuClick: () => void
@@ -70,11 +72,14 @@ const notifIcon = (type: Notification['type']) => {
 }
 
 const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
+  const { theme, setTheme } = useTheme()
   const [notifOpen, setNotifOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
   const notifRef = useRef<HTMLDivElement>(null)
   const profileRef = useRef<HTMLDivElement>(null)
+
+  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
 
   const unread = notifications.filter((n) => !n.read).length
 
@@ -138,10 +143,11 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
         {/* Theme toggle */}
         <button
-          className="p-2 rounded-xl text-slate-400 dark:text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-150"
+          onClick={() => setTheme(isDark ? 'light' : 'dark')}
+          className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all duration-150 dark:hover:text-slate-200 dark:hover:bg-slate-800"
           aria-label="Toggle theme"
         >
-          <Sun size={18} />
+          {isDark ? <Moon size={18} /> : <Sun size={18} />}
         </button>
 
         {/* ── Notifications ── */}
