@@ -24,7 +24,7 @@ const DashboardCanvas: React.FC<DashboardCanvasProps> = ({ activeNav }) => {
   }
 
   return (
-    <main className="flex-1 overflow-y-auto bg-slate-50">
+    <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950">
       <div className="max-w-7xl mx-auto px-6 py-8">
         {renderPage()}
       </div>

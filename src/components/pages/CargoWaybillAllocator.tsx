@@ -98,63 +98,63 @@ const CargoWaybillAllocator: React.FC = () => {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         
         {/* Left Pane: The Form */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[600px]">
-          <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50">
-            <h2 className="text-lg font-bold text-slate-800 tracking-tight">Allocation Details</h2>
-            <p className="text-xs text-slate-500 mt-1">Fill in the dispatch manifest to generate a digital waybill</p>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col h-[600px]">
+          <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50">
+            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 tracking-tight">Allocation Details</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Fill in the dispatch manifest to generate a digital waybill</p>
           </div>
           
           <div className="p-8 flex-1 overflow-y-auto">
             <form id="allocator-form" onSubmit={handleGenerate} className="space-y-6">
               
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider ml-1">Client Name</label>
+                <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider ml-1">Client Name</label>
                 <div className="relative">
                    <input 
                      type="text" 
                      value={clientName}
                      onChange={(e) => setClientName(e.target.value)}
                      placeholder="e.g. NexaCorp Logistics Inc."
-                     className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl px-4 py-3 outline-none transition-all focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 placeholder-slate-400"
+                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm rounded-xl px-4 py-3 outline-none transition-all focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 placeholder-slate-400"
                    />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider ml-1">Destination Route</label>
+                <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider ml-1">Destination Route</label>
                 <div className="relative">
-                   <MapPin size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                   <MapPin size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                    <input 
                      type="text" 
                      value={destination}
                      onChange={(e) => setDestination(e.target.value)}
                      placeholder="e.g. Pier 4 to Laguna Warehouse"
-                     className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl pl-11 pr-4 py-3 outline-none transition-all focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 placeholder-slate-400"
+                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm rounded-xl pl-11 pr-4 py-3 outline-none transition-all focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 placeholder-slate-400"
                    />
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-slate-100">
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                 <div className="flex items-end gap-3">
                   <div className="flex-1 space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider ml-1">Add Cargo Unit</label>
+                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider ml-1">Add Cargo Unit</label>
                     <div className="relative">
                       <select 
                         value={selectedType}
                         onChange={(e) => setSelectedType(e.target.value as ContainerType)}
-                        className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-800 text-sm font-medium rounded-xl px-4 py-3 outline-none transition-all focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                        className="w-full appearance-none bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm font-medium rounded-xl px-4 py-3 outline-none transition-all focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                       >
                         <option value="20-footer">20-Footer Standard (50% Cap)</option>
                         <option value="40-footer">40-Footer High Cube (100% Cap)</option>
                         <option value="LCL">LCL / Back-to-back (25% Cap)</option>
                       </select>
-                      <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                      <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 pointer-events-none" />
                     </div>
                   </div>
                   <button 
                     onClick={handleAddItem}
                     disabled={isOverCapacity || (currentCapacity + CAPACITY_MAP[selectedType] > 100)}
-                    className="h-[46px] px-5 bg-slate-100 text-slate-700 font-semibold rounded-xl text-sm border border-slate-200 shadow-sm hover:bg-slate-200 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                    className="h-[46px] px-5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-sm border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-slate-200 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                   >
                     <Plus size={16} /> Add
                   </button>
@@ -163,22 +163,22 @@ const CargoWaybillAllocator: React.FC = () => {
 
               {/* Added Items List */}
               {items.length > 0 && (
-                <div className="bg-slate-50 rounded-xl border border-slate-100 p-2 space-y-2">
+                <div className="bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800 p-2 space-y-2">
                   {items.map((item, idx) => (
-                    <div key={item.id} className="flex items-center justify-between bg-white px-4 py-3 rounded-lg border border-slate-100 shadow-sm animate-fade-in-down" style={{ animationDelay: `${idx * 50}ms` }}>
+                    <div key={item.id} className="flex items-center justify-between bg-white dark:bg-slate-900 px-4 py-3 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm animate-fade-in-down" style={{ animationDelay: `${idx * 50}ms` }}>
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
                           <Package size={16} />
                         </div>
                         <div>
-                           <p className="text-sm font-bold text-slate-800">{item.type}</p>
-                           <p className="text-[10px] text-slate-500 font-medium">Est. Weight: {item.weight}</p>
+                           <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{item.type}</p>
+                           <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Est. Weight: {item.weight}</p>
                         </div>
                       </div>
                       <button 
                         type="button"
                         onClick={() => handleRemoveItem(item.id)}
-                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                        className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
                       >
                         <X size={16} />
                       </button>
@@ -190,7 +190,7 @@ const CargoWaybillAllocator: React.FC = () => {
             </form>
           </div>
           
-          <div className="px-8 py-5 border-t border-slate-100 bg-white">
+          <div className="px-8 py-5 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
              <button 
                 type="submit"
                 form="allocator-form"
@@ -235,7 +235,7 @@ const CargoWaybillAllocator: React.FC = () => {
               <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
                 <Truck size={20} className="text-blue-400" /> Chassis Visualizer
               </h2>
-              <p className="text-xs text-slate-400 mt-1">Real-time load and balance monitoring</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Real-time load and balance monitoring</p>
             </div>
             
             <div className={`px-3 py-1.5 rounded-full border text-xs font-bold transition-colors ${
@@ -266,7 +266,7 @@ const CargoWaybillAllocator: React.FC = () => {
                    
                    {/* Ghost state when empty */}
                    {items.length === 0 && (
-                     <div className="absolute inset-0 flex items-center justify-center text-slate-500 font-semibold text-sm tracking-widest uppercase">
+                     <div className="absolute inset-0 flex items-center justify-center text-slate-500 dark:text-slate-400 font-semibold text-sm tracking-widest uppercase">
                        Awaiting Cargo
                      </div>
                    )}
@@ -300,7 +300,7 @@ const CargoWaybillAllocator: React.FC = () => {
              </div>
 
              <div className="mt-12 w-full max-w-sm space-y-4">
-                <div className="flex justify-between text-xs font-semibold text-slate-400">
+                <div className="flex justify-between text-xs font-semibold text-slate-400 dark:text-slate-500">
                   <span>0%</span>
                   <span>50%</span>
                   <span>100%</span>

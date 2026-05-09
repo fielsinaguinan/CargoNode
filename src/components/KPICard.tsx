@@ -13,7 +13,7 @@ interface KPICardProps {
 
 const KPICard: React.FC<KPICardProps> = ({ label, value, sub, trend, icon, iconBg }) => {
   return (
-    <div className="relative bg-white rounded-2xl border border-slate-200 shadow-sm p-5 card-hover overflow-hidden">
+    <div className="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 card-hover overflow-hidden">
       {/* Subtle top gradient line */}
       <div className="absolute top-0 left-5 right-5 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
 
@@ -40,11 +40,11 @@ const KPICard: React.FC<KPICardProps> = ({ label, value, sub, trend, icon, iconB
       </div>
 
       <div className="mt-4">
-        <p className="text-2xl font-bold text-slate-900 tracking-tight font-[Plus_Jakarta_Sans,sans-serif]">
+        <p className="text-2xl font-bold text-slate-900 dark:text-slate-50 tracking-tight font-[Plus_Jakarta_Sans,sans-serif]">
           {value}
         </p>
-        <p className="text-xs font-medium text-slate-500 mt-0.5">{label}</p>
-        <p className="text-[11px] text-slate-400 mt-1">{sub}</p>
+        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">{label}</p>
+        <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">{sub}</p>
       </div>
     </div>
   )

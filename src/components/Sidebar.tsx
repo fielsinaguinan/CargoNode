@@ -107,7 +107,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
             <p className="text-white font-bold text-sm tracking-tight leading-none font-[Plus_Jakarta_Sans,sans-serif]">
               CargoNode
             </p>
-            <p className="text-slate-500 text-[10px] font-medium tracking-widest uppercase mt-0.5">
+            <p className="text-slate-500 dark:text-slate-400 text-[10px] font-medium tracking-widest uppercase mt-0.5">
               CEBLE Trucking
             </p>
           </div>
@@ -115,7 +115,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
         {/* Close button — mobile only */}
         <button
           onClick={onClose}
-          className="lg:hidden text-slate-500 hover:text-slate-300 transition-colors p-1 rounded-lg hover:bg-white/5"
+          className="lg:hidden text-slate-500 dark:text-slate-400 hover:text-slate-300 transition-colors p-1 rounded-lg hover:bg-white/5"
           aria-label="Close sidebar"
         >
           <X size={18} />
@@ -126,7 +126,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
       <nav className="flex-1 overflow-y-auto sidebar-scroll py-4 px-3">
         {navGroups.map((group, gi) => (
           <div key={gi} className={gi > 0 ? 'mt-6' : ''}>
-            <p className="text-slate-500 text-[10px] font-semibold uppercase tracking-widest px-3 mb-1.5">
+            <p className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold uppercase tracking-widest px-3 mb-1.5">
               {group.groupLabel}
             </p>
             <ul className="space-y-0.5">
@@ -141,7 +141,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
                         'transition-all duration-150 group relative',
                         isActive
                           ? 'bg-white/10 text-white'
-                          : 'text-slate-400 hover:bg-white/5 hover:text-slate-200',
+                          : 'text-slate-400 dark:text-slate-500 hover:bg-white/5 hover:text-slate-200',
                       ].join(' ')}
                     >
                       {/* Active indicator bar */}
@@ -153,7 +153,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
                       <span
                         className={[
                           'transition-colors duration-150',
-                          isActive ? 'text-blue-400' : 'text-slate-500 group-hover:text-slate-300',
+                          isActive ? 'text-blue-400' : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-300',
                         ].join(' ')}
                       >
                         {link.icon}
@@ -175,8 +175,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
                           className={[
                             'transition-all duration-150',
                             isActive
-                              ? 'text-slate-400 opacity-100'
-                              : 'text-slate-600 opacity-0 group-hover:opacity-100',
+                              ? 'text-slate-400 dark:text-slate-500 opacity-100'
+                              : 'text-slate-600 dark:text-slate-400 opacity-0 group-hover:opacity-100',
                           ].join(' ')}
                         />
                       )}
@@ -190,7 +190,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
 
         {/* ── Quick stats strip ── */}
         <div className="mt-6 mx-1 rounded-xl border border-white/8 bg-white/3 p-4">
-          <p className="text-slate-500 text-[10px] uppercase tracking-widest font-semibold mb-3">
+          <p className="text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest font-semibold mb-3">
             Fleet Status
           </p>
           <div className="space-y-2.5">
@@ -202,7 +202,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
               <div key={stat.label} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className={`w-1.5 h-1.5 rounded-full ${stat.color}`} />
-                  <span className="text-slate-400 text-xs">{stat.label}</span>
+                  <span className="text-slate-400 dark:text-slate-500 text-xs">{stat.label}</span>
                 </div>
                 <span className="text-slate-200 text-xs font-semibold">{stat.value}</span>
               </div>
@@ -215,7 +215,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
               style={{ width: '79%' }}
             />
           </div>
-          <p className="text-slate-500 text-[10px] mt-1.5">79% utilisation</p>
+          <p className="text-slate-500 dark:text-slate-400 text-[10px] mt-1.5">79% utilisation</p>
         </div>
       </nav>
 
@@ -228,7 +228,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
         ].map((item) => (
           <button
             key={item.label}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-all duration-150"
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-500 dark:text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all duration-150"
           >
             {item.icon}
             <span>{item.label}</span>
@@ -242,11 +242,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-slate-200 text-xs font-semibold truncate">James Dela Cruz</p>
-            <p className="text-slate-500 text-[10px] truncate">Fleet Administrator</p>
+            <p className="text-slate-500 dark:text-slate-400 text-[10px] truncate">Fleet Administrator</p>
           </div>
           <LogOut
             size={14}
-            className="text-slate-600 group-hover:text-slate-400 transition-colors flex-shrink-0"
+            className="text-slate-600 dark:text-slate-400 group-hover:text-slate-400 transition-colors flex-shrink-0"
           />
         </div>
       </div>

@@ -129,14 +129,14 @@ const Analytics: React.FC = () => {
         title="Analytics"
         subtitle="Performance metrics, revenue trends and operational KPIs"
         actions={
-          <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1">
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
             {(['week', 'month', 'quarter'] as const).map((p) => (
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
                 className={[
                   'px-4 py-1.5 rounded-lg text-xs font-medium capitalize transition-all duration-150',
-                  period === p ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700',
+                  period === p ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700',
                 ].join(' ')}
               >
                 {p}
@@ -149,7 +149,7 @@ const Analytics: React.FC = () => {
       {/* KPI Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {kpiCards.map((k) => (
-          <div key={k.label} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 card-hover">
+          <div key={k.label} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 card-hover">
             <div className="flex items-center justify-between mb-3">
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${k.iconBg}`}>
                 {k.icon}
@@ -162,11 +162,11 @@ const Analytics: React.FC = () => {
                 {k.change}
               </div>
             </div>
-            <p className="text-2xl font-bold text-slate-900 tracking-tight font-[Plus_Jakarta_Sans,sans-serif]">
+            <p className="text-2xl font-bold text-slate-900 dark:text-slate-50 tracking-tight font-[Plus_Jakarta_Sans,sans-serif]">
               {k.value}
             </p>
-            <p className="text-xs font-medium text-slate-500 mt-0.5">{k.label}</p>
-            <p className="text-[11px] text-slate-400 mt-0.5">{k.sub}</p>
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">{k.label}</p>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">{k.sub}</p>
             <div className="mt-3">
               <Sparkline data={k.data} color={k.color} />
             </div>
@@ -178,16 +178,16 @@ const Analytics: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
         {/* Delivery volume bar chart */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 card-hover">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 card-hover">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h3 className="text-sm font-semibold text-slate-800">Weekly Delivery Volume</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Total completed deliveries per week</p>
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Weekly Delivery Volume</h3>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Total completed deliveries per week</p>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-sm bg-blue-500 opacity-35" />
               <span className="w-2.5 h-2.5 rounded-sm bg-blue-500" />
-              <span className="text-xs text-slate-400">Last 8 weeks</span>
+              <span className="text-xs text-slate-400 dark:text-slate-500">Last 8 weeks</span>
             </div>
           </div>
 
@@ -231,10 +231,10 @@ const Analytics: React.FC = () => {
         </div>
 
         {/* On-time rate donut */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 card-hover flex flex-col">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 card-hover flex flex-col">
           <div className="mb-5">
-            <h3 className="text-sm font-semibold text-slate-800">On-Time Delivery Rate</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Current quarter average</p>
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">On-Time Delivery Rate</h3>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Current quarter average</p>
           </div>
 
           {/* Donut chart SVG */}
@@ -263,8 +263,8 @@ const Analytics: React.FC = () => {
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-2xl font-bold text-slate-900 font-[Plus_Jakarta_Sans,sans-serif]">92.8%</span>
-                <span className="text-[10px] text-slate-400">On-Time</span>
+                <span className="text-2xl font-bold text-slate-900 dark:text-slate-50 font-[Plus_Jakarta_Sans,sans-serif]">92.8%</span>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500">On-Time</span>
               </div>
             </div>
           </div>
@@ -278,9 +278,9 @@ const Analytics: React.FC = () => {
               <div key={s.label} className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-sm ${s.color}`} />
-                  <span className="text-slate-500">{s.label}</span>
+                  <span className="text-slate-500 dark:text-slate-400">{s.label}</span>
                 </div>
-                <span className="font-semibold text-slate-700">{s.pct}%</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-300">{s.pct}%</span>
               </div>
             ))}
           </div>
@@ -291,30 +291,30 @@ const Analytics: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
         {/* Top routes */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden card-hover">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden card-hover">
+          <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-semibold text-slate-800">Top Routes by Volume</h3>
-              <p className="text-xs text-slate-400 mt-0.5">This quarter</p>
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Top Routes by Volume</h3>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">This quarter</p>
             </div>
             <Map size={15} className="text-slate-300" />
           </div>
-          <div className="divide-y divide-slate-50">
+          <div className="divide-y divide-slate-50 dark:divide-slate-800/50">
             {topRoutes.map((r, i) => (
               <div key={r.route} className="px-6 py-3.5 hover:bg-slate-50/60 transition-colors">
                 <div className="flex items-center gap-3">
-                  <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-500 text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                  <span className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold flex items-center justify-center flex-shrink-0">
                     {i + 1}
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1.5">
-                      <p className="text-xs font-medium text-slate-700 truncate">{r.route}</p>
+                      <p className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">{r.route}</p>
                       <div className="flex items-center gap-3 flex-shrink-0 ml-2">
-                        <span className="text-xs text-slate-400">{r.volume}</span>
-                        <span className="text-xs font-semibold text-slate-800">{r.revenue}</span>
+                        <span className="text-xs text-slate-400 dark:text-slate-500">{r.volume}</span>
+                        <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{r.revenue}</span>
                       </div>
                     </div>
-                    <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                    <div className="h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                       <div
                         className="h-full rounded-full bg-blue-400 transition-all duration-700"
                         style={{ width: `${r.share}%`, maxWidth: '100%' }}
@@ -325,7 +325,7 @@ const Analytics: React.FC = () => {
               </div>
             ))}
           </div>
-          <div className="px-6 py-3 border-t border-slate-100 bg-slate-50/50">
+          <div className="px-6 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50">
             <button className="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors">
               View all routes <ArrowUpRight size={11} />
             </button>
@@ -333,11 +333,11 @@ const Analytics: React.FC = () => {
         </div>
 
         {/* Weekly revenue line chart */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 card-hover">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 card-hover">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-semibold text-slate-800">Revenue Trend</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Weekly revenue in ₱M</p>
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Revenue Trend</h3>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Weekly revenue in ₱M</p>
             </div>
             <div className="flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
               <TrendingUp size={12} />
@@ -404,18 +404,18 @@ const Analytics: React.FC = () => {
           </div>
 
           {/* Summary */}
-          <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
             <div className="text-center">
-              <p className="text-xs text-slate-400">Peak Week</p>
-              <p className="text-sm font-bold text-slate-800 mt-0.5">W8 · ₱2.4M</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Peak Week</p>
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-0.5">W8 · ₱2.4M</p>
             </div>
             <div className="text-center">
-              <p className="text-xs text-slate-400">Avg Weekly</p>
-              <p className="text-sm font-bold text-slate-800 mt-0.5">₱1.71M</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Avg Weekly</p>
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-0.5">₱1.71M</p>
             </div>
             <div className="text-center">
-              <p className="text-xs text-slate-400">Total QTD</p>
-              <p className="text-sm font-bold text-slate-800 mt-0.5">₱13.7M</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Total QTD</p>
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-0.5">₱13.7M</p>
             </div>
           </div>
         </div>

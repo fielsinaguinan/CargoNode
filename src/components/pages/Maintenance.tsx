@@ -125,18 +125,18 @@ const Maintenance: React.FC = () => {
       {/* Summary stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Fleet', value: '48', icon: <Truck size={16} />, bg: 'bg-slate-50 text-slate-600' },
+          { label: 'Total Fleet', value: '48', icon: <Truck size={16} />, bg: 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400' },
           { label: 'Service Due', value: vehicles.filter(v => v.status === 'due').length.toString(), icon: <Clock size={16} />, bg: 'bg-amber-50 text-amber-600' },
           { label: 'Overdue', value: vehicles.filter(v => v.status === 'overdue').length.toString(), icon: <AlertTriangle size={16} />, bg: 'bg-red-50 text-red-600' },
           { label: 'In Service', value: vehicles.filter(v => v.status === 'in-service').length.toString(), icon: <Wrench size={16} />, bg: 'bg-violet-50 text-violet-600' },
         ].map((s) => (
-          <div key={s.label} className="bg-white rounded-2xl border border-slate-200 shadow-sm px-5 py-4 card-hover flex items-center gap-4">
+          <div key={s.label} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm px-5 py-4 card-hover flex items-center gap-4">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${s.bg}`}>
               {s.icon}
             </div>
             <div>
-              <p className="text-xl font-bold text-slate-900 tracking-tight font-[Plus_Jakarta_Sans,sans-serif]">{s.value}</p>
-              <p className="text-xs text-slate-500">{s.label}</p>
+              <p className="text-xl font-bold text-slate-900 dark:text-slate-50 tracking-tight font-[Plus_Jakarta_Sans,sans-serif]">{s.value}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{s.label}</p>
             </div>
           </div>
         ))}
@@ -147,17 +147,17 @@ const Maintenance: React.FC = () => {
         {vehicles.map((v) => {
           const cfg = statusCfg[v.status]
           return (
-            <div key={v.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden card-hover group">
+            <div key={v.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden card-hover group">
               {/* Card top */}
-              <div className="px-5 py-4 border-b border-slate-100">
+              <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
-                      <Truck size={18} className="text-slate-500" />
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
+                      <Truck size={18} className="text-slate-500 dark:text-slate-400" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-slate-800 tracking-tight">{v.plate}</p>
-                      <p className="text-xs text-slate-500">{v.model} · {v.year}</p>
+                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200 tracking-tight">{v.plate}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{v.model} · {v.year}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -165,7 +165,7 @@ const Maintenance: React.FC = () => {
                       {cfg.icon}
                       {cfg.label}
                     </span>
-                    <button className="p-1.5 rounded-lg text-slate-300 hover:text-slate-600 hover:bg-slate-100 opacity-0 group-hover:opacity-100 transition-all">
+                    <button className="p-1.5 rounded-lg text-slate-300 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition-all">
                       <MoreHorizontal size={14} />
                     </button>
                   </div>
@@ -175,13 +175,13 @@ const Maintenance: React.FC = () => {
               {/* Health bar */}
               <div className="px-5 pt-4">
                 <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                  <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                     <Gauge size={12} />
                     Vehicle Health
                   </div>
-                  <span className="text-xs font-semibold text-slate-700">{v.health}%</span>
+                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{v.health}%</span>
                 </div>
-                <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-700 ${cfg.bar}`}
                     style={{ width: `${v.health}%` }}
@@ -192,27 +192,27 @@ const Maintenance: React.FC = () => {
               {/* Details */}
               <div className="px-5 py-4 space-y-2.5">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-400 flex items-center gap-1.5"><Gauge size={11} /> Mileage</span>
-                  <span className="text-slate-700 font-medium">{v.mileage}</span>
+                  <span className="text-slate-400 dark:text-slate-500 flex items-center gap-1.5"><Gauge size={11} /> Mileage</span>
+                  <span className="text-slate-700 dark:text-slate-300 font-medium">{v.mileage}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-400 flex items-center gap-1.5"><Calendar size={11} /> Last Service</span>
-                  <span className="text-slate-700 font-medium">{v.lastService}</span>
+                  <span className="text-slate-400 dark:text-slate-500 flex items-center gap-1.5"><Calendar size={11} /> Last Service</span>
+                  <span className="text-slate-700 dark:text-slate-300 font-medium">{v.lastService}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-400 flex items-center gap-1.5"><Clock size={11} /> Next Service</span>
-                  <span className={`font-medium ${v.status === 'overdue' ? 'text-red-600' : v.status === 'due' ? 'text-amber-600' : 'text-slate-700'}`}>
+                  <span className="text-slate-400 dark:text-slate-500 flex items-center gap-1.5"><Clock size={11} /> Next Service</span>
+                  <span className={`font-medium ${v.status === 'overdue' ? 'text-red-600' : v.status === 'due' ? 'text-amber-600' : 'text-slate-700 dark:text-slate-300'}`}>
                     {v.nextService}
                   </span>
                 </div>
 
                 {/* Issues */}
                 {v.issues.length > 0 && (
-                  <div className="mt-1 pt-2.5 border-t border-slate-100 space-y-1.5">
+                  <div className="mt-1 pt-2.5 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
                     {v.issues.map((issue) => (
                       <div key={issue} className="flex items-start gap-2 text-xs">
                         <AlertTriangle size={11} className="text-amber-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-slate-600">{issue}</span>
+                        <span className="text-slate-600 dark:text-slate-400">{issue}</span>
                       </div>
                     ))}
                   </div>
@@ -220,8 +220,8 @@ const Maintenance: React.FC = () => {
               </div>
 
               {/* Card footer */}
-              <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                <span className="text-[11px] text-slate-400">Fleet ID: {v.id}</span>
+              <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 flex items-center justify-between">
+                <span className="text-[11px] text-slate-400 dark:text-slate-500">Fleet ID: {v.id}</span>
                 <button className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors">
                   View History
                   <ChevronRight size={12} />

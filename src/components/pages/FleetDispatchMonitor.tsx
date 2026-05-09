@@ -30,10 +30,10 @@ const statusStyles: Record<string, string> = {
   'Pier Standby': 'bg-amber-100 text-amber-800 border-amber-200',
   'Delayed': 'bg-red-100 text-red-800 border-red-200',
   'Loading': 'bg-blue-100 text-blue-800 border-blue-200',
-  'Signal Lost': 'bg-slate-200 text-slate-800 border-slate-300',
+  'Signal Lost': 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-600',
   'Approaching Pier': 'bg-blue-100 text-blue-800 border-blue-200',
   'Arriving': 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  'Delivered': 'bg-slate-100 text-slate-600 border-slate-200',
+  'Delivered': 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700',
   'Maintenance': 'bg-amber-100 text-amber-800 border-amber-200',
 }
 
@@ -97,7 +97,7 @@ const FleetDispatchMonitor: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center h-96">
         <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-        <p className="mt-4 text-sm font-medium text-slate-500">Connecting to Supabase Realtime...</p>
+        <p className="mt-4 text-sm font-medium text-slate-500 dark:text-slate-400">Connecting to Supabase Realtime...</p>
       </div>
     )
   }
@@ -110,7 +110,7 @@ const FleetDispatchMonitor: React.FC = () => {
         badge={{ label: 'Live Data', color: 'bg-emerald-500' }}
         actions={
           <div className="flex gap-2">
-            <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-white border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors">
+            <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
               <Activity size={14} className="text-blue-500" />
               System Diagnostics
             </button>
@@ -127,18 +127,18 @@ const FleetDispatchMonitor: React.FC = () => {
         {kpis.map((k) => {
           const theme = themeMap[k.colorTheme]
           return (
-            <div key={k.label} className={`bg-white rounded-2xl border border-slate-200 shadow-sm p-5 card-hover relative overflow-hidden border-t-2 ${theme.borderTop}`}>
+            <div key={k.label} className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 card-hover relative overflow-hidden border-t-2 ${theme.borderTop}`}>
               <div className="flex items-start justify-between">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${theme.bg} ${theme.text} flex-shrink-0`}>
                   {k.icon}
                 </div>
               </div>
               <div className="mt-4">
-                <p className="text-2xl font-bold text-slate-900 tracking-tight font-[Plus_Jakarta_Sans,sans-serif]">
+                <p className="text-2xl font-bold text-slate-900 dark:text-slate-50 tracking-tight font-[Plus_Jakarta_Sans,sans-serif]">
                   {k.value}
                 </p>
-                <p className="text-xs font-medium text-slate-600 mt-0.5">{k.label}</p>
-                <p className="text-[11px] text-slate-400 mt-1">{k.sub}</p>
+                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mt-0.5">{k.label}</p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">{k.sub}</p>
               </div>
             </div>
           )
@@ -175,7 +175,7 @@ const FleetDispatchMonitor: React.FC = () => {
                </div>
                <div>
                  <p className="text-white text-xs font-semibold tracking-wide">Live GPS Tracking</p>
-                 <p className="text-slate-400 text-[10px]">GPS Interval: 30s</p>
+                 <p className="text-slate-400 dark:text-slate-500 text-[10px]">GPS Interval: 30s</p>
                </div>
              </div>
           </div>
@@ -187,25 +187,25 @@ const FleetDispatchMonitor: React.FC = () => {
           <div className="relative z-10 m-auto text-center pointer-events-none">
             <Navigation size={32} className="text-blue-400 mx-auto mb-3 opacity-80" />
             <h3 className="text-white font-bold tracking-widest uppercase text-sm">Central Dispatch Sector</h3>
-            <p className="text-slate-400 text-xs mt-1">Monitoring {activeMoversCount} active coordinates</p>
+            <p className="text-slate-400 dark:text-slate-500 text-xs mt-1">Monitoring {activeMoversCount} active coordinates</p>
           </div>
         </div>
 
         {/* Incoming Fleet Timeline */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-80">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col h-80">
+          <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50">
             <div>
-              <h3 className="text-sm font-semibold text-slate-800">Incoming Fleet</h3>
-              <p className="text-[11px] text-slate-400 mt-0.5">Next 60 minutes</p>
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Incoming Fleet</h3>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Next 60 minutes</p>
             </div>
-            <Clock size={16} className="text-slate-400" />
+            <Clock size={16} className="text-slate-400 dark:text-slate-500" />
           </div>
           <div className="flex-1 overflow-y-auto p-5 relative">
              {/* Timeline line */}
-             <div className="absolute left-[33px] top-6 bottom-6 w-px bg-slate-100" />
+             <div className="absolute left-[33px] top-6 bottom-6 w-px bg-slate-100 dark:bg-slate-800" />
              
              {incomingFleet.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                <div className="h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
                    <Truck size={24} className="mb-2 opacity-50" />
                    <p className="text-xs font-medium">No incoming fleet detected.</p>
                 </div>
@@ -213,26 +213,26 @@ const FleetDispatchMonitor: React.FC = () => {
                 <div className="space-y-6">
                   {incomingFleet.map((fleet, i) => (
                     <div key={fleet.id} className="relative flex gap-4 group animate-fade-in-down" style={{animationDelay: `${i * 100}ms`}}>
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 z-10 bg-white border-2 ${i === 0 ? 'border-emerald-500 text-emerald-500' : 'border-blue-500 text-blue-500'}`}>
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 z-10 bg-white dark:bg-slate-900 border-2 ${i === 0 ? 'border-emerald-500 text-emerald-500' : 'border-blue-500 text-blue-500'}`}>
                           <Truck size={12} />
                         </div>
                         <div className="flex-1 min-w-0 pt-0.5">
                           <div className="flex items-start justify-between">
-                            <p className="text-xs font-bold text-slate-800">{fleet.id}</p>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${i === 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{fleet.id}</p>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${i === 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
                               {fleet.eta}
                             </span>
                           </div>
-                          <p className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1.5">
-                            <MapPin size={10} className="text-slate-400" />
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5">
+                            <MapPin size={10} className="text-slate-400 dark:text-slate-500" />
                             {fleet.location}
                           </p>
                           <div className="flex items-center gap-2 mt-2">
-                            <span className="w-5 h-5 rounded-full bg-slate-100 text-[9px] font-bold text-slate-600 flex items-center justify-center">
+                            <span className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-[9px] font-bold text-slate-600 dark:text-slate-400 flex items-center justify-center">
                               {fleet.driver.charAt(0)}
                             </span>
-                            <span className="text-[10px] text-slate-500">{fleet.driver}</span>
-                            <span className="text-[10px] text-slate-400 ml-auto">{fleet.status}</span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400">{fleet.driver}</span>
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-auto">{fleet.status}</span>
                           </div>
                         </div>
                     </div>
@@ -240,21 +240,21 @@ const FleetDispatchMonitor: React.FC = () => {
                 </div>
              )}
           </div>
-          <button className="w-full py-2.5 text-xs font-semibold text-blue-600 hover:bg-slate-50 border-t border-slate-100 transition-colors">
+          <button className="w-full py-2.5 text-xs font-semibold text-blue-600 hover:bg-slate-50 dark:hover:bg-slate-800 border-t border-slate-100 dark:border-slate-800 transition-colors">
             View Full Schedule
           </button>
         </div>
       </div>
 
       {/* Dispatch Data Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-b from-white to-slate-50">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-gradient-to-b from-white to-slate-50">
           <div>
-            <h2 className="text-sm font-semibold text-slate-800">Live Dispatch Roster</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Real-time status of deployed assets synchronized via Supabase</p>
+            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Live Dispatch Roster</h2>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Real-time status of deployed assets synchronized via Supabase</p>
           </div>
           <div className="flex items-center gap-2 text-xs">
-            <span className="flex items-center gap-1.5 text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full font-medium">
+            <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full font-medium">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div> Live Connection
             </span>
           </div>
@@ -262,42 +262,42 @@ const FleetDispatchMonitor: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left border-b border-slate-100 bg-slate-50/50">
-                <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Prime Mover ID</th>
-                <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Waybill / Container</th>
-                <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Route Assignment</th>
-                <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Live Status</th>
+              <tr className="text-left border-b border-slate-100 dark:border-slate-800 bg-slate-50/50">
+                <th className="px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">Prime Mover ID</th>
+                <th className="px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">Waybill / Container</th>
+                <th className="px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">Route Assignment</th>
+                <th className="px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">Live Status</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
               {waybills.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-slate-500 text-sm">
+                  <td colSpan={5} className="px-6 py-8 text-center text-slate-500 dark:text-slate-400 text-sm">
                     No active dispatches found in the database.
                   </td>
                 </tr>
               ) : waybills.map((row) => (
-                <tr key={row.tracking_number} className="hover:bg-slate-50 transition-colors duration-150 group">
+                <tr key={row.tracking_number} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors duration-150 group">
                   <td className="px-6 py-3.5 whitespace-nowrap">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 flex-shrink-0 shadow-sm">
+                      <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-400 flex-shrink-0 shadow-sm">
                         <Truck size={14} />
                       </div>
-                      <span className="font-mono text-xs font-bold text-slate-700">{row.prime_mover_id || 'Unassigned'}</span>
+                      <span className="font-mono text-xs font-bold text-slate-700 dark:text-slate-300">{row.prime_mover_id || 'Unassigned'}</span>
                     </div>
                   </td>
                   <td className="px-6 py-3.5 whitespace-nowrap">
                      <div className="flex flex-col">
                        <span className="font-mono text-[11px] font-bold text-blue-600">{row.tracking_number}</span>
                        <div className="flex items-center gap-1.5 mt-0.5">
-                         <Package size={11} className="text-slate-400" />
-                         <span className="text-[11px] font-medium text-slate-500">{row.container_type}</span>
+                         <Package size={11} className="text-slate-400 dark:text-slate-500" />
+                         <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">{row.container_type}</span>
                        </div>
                      </div>
                   </td>
                   <td className="px-6 py-3.5 whitespace-nowrap">
-                    <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
                       <MapPin size={12} className="text-blue-500 opacity-70" />
                       {row.origin} 
                       <ArrowRight size={10} className="mx-1 text-slate-300" />
@@ -305,15 +305,15 @@ const FleetDispatchMonitor: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-3.5 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border ${statusStyles[row.status] || 'bg-slate-100 text-slate-700 border-slate-200'}`}>
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border ${statusStyles[row.status] || 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}>
                       {row.status}
                     </span>
                   </td>
                   <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                    <button className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors opacity-0 group-hover:opacity-100">
+                    <button className="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-700 hover:bg-slate-200 transition-colors opacity-0 group-hover:opacity-100">
                       <MoreHorizontal size={15} />
                     </button>
-                    <button className="ml-1 p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors opacity-0 group-hover:opacity-100">
+                    <button className="ml-1 p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors opacity-0 group-hover:opacity-100">
                       <ChevronRight size={15} />
                     </button>
                   </td>

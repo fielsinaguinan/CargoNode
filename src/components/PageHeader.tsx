@@ -15,7 +15,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, badge, actions
     <div className="flex items-start justify-between gap-4">
       <div>
         <div className="flex items-center gap-3 mb-1">
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight font-[Plus_Jakarta_Sans,sans-serif]">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-50 tracking-tight font-[Plus_Jakarta_Sans,sans-serif]">
             {title}
           </h1>
           {badge && (
@@ -25,7 +25,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, badge, actions
             </span>
           )}
         </div>
-        <p className="text-sm text-slate-500">{subtitle}</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
       </div>
       {actions && (
         <div className="flex items-center gap-2 flex-shrink-0">
