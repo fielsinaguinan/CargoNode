@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import KPICard from '../KPICard'
 import PageHeader from '../PageHeader'
+import LiveMap from '../LiveMap'
 import { supabase } from '../../lib/supabase'
 
 interface Dispatch {
@@ -102,53 +103,15 @@ const DispatchBoard: React.FC = () => {
         ))}
       </div>
 
-      {/* Map placeholder */}
-      <div className="relative rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden h-52 card-hover">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 flex items-center justify-center">
-          {/* Simulated map grid */}
-          <div className="absolute inset-0 opacity-10"
-            style={{
-              backgroundImage: 'linear-gradient(rgba(148,163,184,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.3) 1px, transparent 1px)',
-              backgroundSize: '40px 40px',
-            }}
-          />
-          {/* Fake route lines */}
-          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 800 200" preserveAspectRatio="none">
-            <path d="M50,100 Q200,30 350,120 Q500,200 650,80 Q720,50 780,100" stroke="#3b82f6" strokeWidth="2" fill="none" strokeDasharray="6 4" opacity="0.6" />
-            <path d="M80,150 Q250,60 400,140 Q550,220 700,100" stroke="#10b981" strokeWidth="1.5" fill="none" strokeDasharray="4 3" opacity="0.4" />
-            <circle cx="50" cy="100" r="5" fill="#3b82f6" opacity="0.9" />
-            <circle cx="350" cy="120" r="6" fill="#f59e0b" opacity="0.9" />
-            <circle cx="650" cy="80" r="5" fill="#10b981" opacity="0.9" />
-            <circle cx="780" cy="100" r="4" fill="#3b82f6" opacity="0.9" />
-          </svg>
-
-          <div className="text-center z-10 pointer-events-none">
-            <MapPin size={28} className="text-blue-400 mx-auto mb-2" />
-            <p className="text-slate-300 text-sm font-medium">Interactive Route Map</p>
-            <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">31 vehicles tracked live across all routes</p>
-          </div>
-        </div>
-
-        {/* Map overlays */}
-        <div className="absolute top-3 right-3 flex gap-2">
-          <div className="bg-white/10 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-            31 Active
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full border border-white/10">
-            <TrendingUp size={12} className="inline mr-1" />
-            Live Tracking
-          </div>
-        </div>
-
-        <div className="absolute bottom-3 left-3 flex gap-2">
-          {['In Transit', 'Loading', 'Delayed'].map((label, i) => (
-            <div key={label} className="bg-white/8 backdrop-blur-sm text-xs px-2.5 py-1 rounded-full border border-white/10 flex items-center gap-1.5">
-              <span className={`w-1.5 h-1.5 rounded-full ${['bg-blue-400', 'bg-amber-400', 'bg-red-400'][i]}`} />
-              <span className="text-slate-300">{label}</span>
-            </div>
-          ))}
-        </div>
+      {/* Live Interactive Map */}
+      <div className="relative rounded-2xl overflow-hidden h-[420px] shadow-xl border border-slate-200 dark:border-slate-800">
+        <LiveMap
+          waybills={waybills.map(w => ({
+            tracking_number: w.tracking_number,
+            prime_mover_id: w.prime_movers?.id ?? null,
+            status: w.status,
+          }))}
+        />
       </div>
 
       {/* Dispatch table */}
