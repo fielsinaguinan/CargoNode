@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import PageHeader from '../PageHeader'
 import { supabase } from '../../lib/supabase'
+import SystemDiagnosticsPanel from '../SystemDiagnosticsPanel'
 
 // Mapping themes for KPIs
 const themeMap: Record<string, { bg: string, text: string, borderTop: string }> = {
@@ -42,6 +43,7 @@ const FleetDispatchMonitor: React.FC = () => {
   const [waybills, setWaybills] = useState<any[]>([])
   const [alerts, setAlerts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [diagOpen, setDiagOpen] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -110,7 +112,10 @@ const FleetDispatchMonitor: React.FC = () => {
         badge={{ label: 'Live Data', color: 'bg-emerald-500' }}
         actions={
           <div className="flex gap-2">
-            <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+            <button
+              onClick={() => setDiagOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            >
               <Activity size={14} className="text-blue-500" />
               System Diagnostics
             </button>
@@ -323,6 +328,8 @@ const FleetDispatchMonitor: React.FC = () => {
           </table>
         </div>
       </div>
+
+      <SystemDiagnosticsPanel open={diagOpen} onClose={() => setDiagOpen(false)} />
     </div>
   )
 }

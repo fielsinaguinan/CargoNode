@@ -75,17 +75,6 @@ interface PrimeMover {
   fuel_allowance: number
 }
 
-const weeks = ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8']
-const deliveries = [82, 91, 78, 108, 95, 114, 103, 128]
-const revenue    = [1.2, 1.5, 1.1, 1.8, 1.6, 2.1, 1.9, 2.4]
-
-const topRoutes = [
-  { route: 'Manila → Cebu',     volume: '340 trips', share: 28, revenue: '₱4.8M' },
-  { route: 'Davao → CDO',       volume: '210 trips', share: 18, revenue: '₱2.6M' },
-  { route: 'Manila → Davao',    volume: '188 trips', share: 15, revenue: '₱3.1M' },
-  { route: 'Cebu → Leyte',      volume: '144 trips', share: 12, revenue: '₱1.4M' },
-  { route: 'Batangas → Manila', volume: '98 trips',  share: 8,  revenue: '₱1.8M' },
-]
 
 const Analytics: React.FC = () => {
   const [period, setPeriod] = useState<'week' | 'month' | 'quarter'>('quarter')
@@ -174,8 +163,46 @@ const Analytics: React.FC = () => {
     },
   ]
 
-  // Top Routes Calculation
-  const routes = waybills.reduce((acc, w) => {
+  // ── Live Weekly Chart Aggregation ────────────────────────────────────────
+  // Build 8 weekly buckets ending today, each 7 days wide.
+  const weeklyData = (() => {
+    const now = new Date()
+    const buckets: { label: string; deliveries: number; revenue: number }[] = []
+    for (let weeksAgo = 7; weeksAgo >= 0; weeksAgo--) {
+      const end = new Date(now)
+      end.setDate(now.getDate() - weeksAgo * 7)
+      end.setHours(23, 59, 59, 999)
+      const start = new Date(end)
+      start.setDate(end.getDate() - 6)
+      start.setHours(0, 0, 0, 0)
+      const slice = waybills.filter(w => {
+        const d = new Date(w.created_at)
+        return d >= start && d <= end
+      })
+      buckets.push({
+        label: `W${8 - weeksAgo}`,
+        deliveries: slice.filter(w => w.status === 'Delivered').length,
+        revenue: slice.reduce((s, w) => s + (w.freight_rate || 0), 0) / 1_000_000,
+      })
+    }
+    return buckets
+  })()
+
+  const weekLabels   = weeklyData.map(b => b.label)
+  const deliveries   = weeklyData.map(b => b.deliveries)
+  const revenue      = weeklyData.map(b => b.revenue)
+
+  // ── Live On-Time Rate ──────────────────────────────────────────────────────
+  const deliveredCount  = waybills.filter(w => w.status === 'Delivered').length
+  const delayedCount    = waybills.filter(w => w.status === 'Delayed').length
+  const closedTotal     = deliveredCount + delayedCount
+  const onTimeRate      = closedTotal > 0 ? (deliveredCount / closedTotal) * 100 : 0
+  // Approximate split: 70% of delays are 'late (<2h)', 30% 'very late'
+  const lateRate        = closedTotal > 0 ? (delayedCount / closedTotal) * 70 : 0
+  const veryLateRate    = closedTotal > 0 ? (delayedCount / closedTotal) * 30 : 0
+
+  // ── Live Top Routes (already computed above, no fallback to mock) ──────────
+  const routeMap = waybills.reduce((acc, w) => {
     const route = `${w.origin} → ${w.destination}`
     if (!acc[route]) acc[route] = { volume: 0, revenue: 0 }
     acc[route].volume += 1
@@ -183,18 +210,17 @@ const Analytics: React.FC = () => {
     return acc
   }, {} as Record<string, { volume: number; revenue: number }>)
 
-  const dynamicTopRoutes = Object.entries(routes)
+  const dynamicTopRoutes = Object.entries(routeMap)
     .sort((a, b) => b[1].volume - a[1].volume)
     .slice(0, 5)
     .map(([route, data]) => ({
       route,
       volume: `${data.volume} trips`,
       share: Math.min(100, (data.volume / (waybills.length || 1)) * 100),
-      revenue: formatCurrency(data.revenue)
+      revenue: formatCurrency(data.revenue),
     }))
 
-  // Fallback to mock if empty
-  const displayRoutes = dynamicTopRoutes.length > 0 ? dynamicTopRoutes : topRoutes
+  const displayRoutes = dynamicTopRoutes
 
   return (
     <div className="space-y-7">
@@ -288,7 +314,7 @@ const Analytics: React.FC = () => {
                     />
                     {/* Label */}
                     <text x={x + barW / 2} y={160} textAnchor="middle" fill="#94a3b8" fontSize="11">
-                      {weeks[i]}
+                      {weekLabels[i]}
                     </text>
                     {/* Value on top */}
                     {i === deliveries.length - 1 && (
@@ -323,20 +349,22 @@ const Analytics: React.FC = () => {
                   stroke="#8b5cf6"
                   strokeWidth="12"
                   strokeLinecap="round"
-                  strokeDasharray={`${(92.8 / 100) * 2 * Math.PI * 46} ${2 * Math.PI * 46}`}
+                  strokeDasharray={`${(onTimeRate / 100) * 2 * Math.PI * 46} ${2 * Math.PI * 46}`}
                 />
-                {/* Secondary arc */}
+                {/* Secondary arc — late rate */}
                 <circle
                   cx="60" cy="60" r="34"
                   fill="none"
-                  stroke="#ddd6fe"
+                  stroke="#fbbf24"
                   strokeWidth="8"
                   strokeLinecap="round"
-                  strokeDasharray={`${(78 / 100) * 2 * Math.PI * 34} ${2 * Math.PI * 34}`}
+                  strokeDasharray={`${(lateRate / 100) * 2 * Math.PI * 34} ${2 * Math.PI * 34}`}
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-2xl font-bold text-slate-900 dark:text-slate-50 font-[Plus_Jakarta_Sans,sans-serif]">92.8%</span>
+                <span className="text-2xl font-bold text-slate-900 dark:text-slate-50 font-[Plus_Jakarta_Sans,sans-serif]">
+                  {closedTotal > 0 ? `${onTimeRate.toFixed(1)}%` : 'N/A'}
+                </span>
                 <span className="text-[10px] text-slate-400 dark:text-slate-500">On-Time</span>
               </div>
             </div>
@@ -344,16 +372,16 @@ const Analytics: React.FC = () => {
 
           <div className="space-y-2.5 mt-auto">
             {[
-              { label: 'On-Time', pct: 92.8, color: 'bg-violet-500' },
-              { label: 'Late (< 2h)', pct: 5.8, color: 'bg-amber-400' },
-              { label: 'Very Late', pct: 1.4, color: 'bg-red-400' },
+              { label: 'On-Time',    pct: onTimeRate,  color: 'bg-violet-500' },
+              { label: 'Late (< 2h)', pct: lateRate,    color: 'bg-amber-400' },
+              { label: 'Very Late',  pct: veryLateRate, color: 'bg-red-400' },
             ].map((s) => (
               <div key={s.label} className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-sm ${s.color}`} />
                   <span className="text-slate-500 dark:text-slate-400">{s.label}</span>
                 </div>
-                <span className="font-semibold text-slate-700 dark:text-slate-300">{s.pct}%</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-300">{s.pct.toFixed(1)}%</span>
               </div>
             ))}
           </div>
@@ -465,8 +493,8 @@ const Analytics: React.FC = () => {
                 )
               })()}
               {/* X axis labels */}
-              {weeks.map((w, i) => {
-                const x = (i / (weeks.length - 1)) * 460 + 10
+              {weekLabels.map((w, i) => {
+                const x = (i / (weekLabels.length - 1)) * 460 + 10
                 return (
                   <text key={w} x={x} y={138} textAnchor="middle" fill="#94a3b8" fontSize="10">
                     {w}
@@ -480,15 +508,23 @@ const Analytics: React.FC = () => {
           <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
             <div className="text-center">
               <p className="text-xs text-slate-400 dark:text-slate-500">Peak Week</p>
-              <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-0.5">W8 · ₱2.4M</p>
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-0.5">
+                {weeklyData.length > 0
+                  ? `${weeklyData.reduce((best, w) => w.revenue > best.revenue ? w : best, weeklyData[0]).label} · ${formatCurrency(weeklyData.reduce((best, w) => w.revenue > best.revenue ? w : best, weeklyData[0]).revenue * 1_000_000)}`
+                  : 'No data'}
+              </p>
             </div>
             <div className="text-center">
               <p className="text-xs text-slate-400 dark:text-slate-500">Avg Weekly</p>
-              <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-0.5">₱1.71M</p>
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-0.5">
+                {revenue.length > 0
+                  ? formatCurrency((revenue.reduce((s, v) => s + v, 0) / revenue.length) * 1_000_000)
+                  : '—'}
+              </p>
             </div>
             <div className="text-center">
-              <p className="text-xs text-slate-400 dark:text-slate-500">Total QTD</p>
-              <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-0.5">₱13.7M</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Total Revenue</p>
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-0.5">{formatCurrency(grossRevenue)}</p>
             </div>
           </div>
         </div>

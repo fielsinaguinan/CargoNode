@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   LayoutGrid,
   FileText,
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import type { NavItem } from '../App'
 import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
 
 interface SidebarProps {
   activeNav: NavItem
@@ -37,7 +38,7 @@ interface NavGroup {
   links: NavLink[]
 }
 
-const navGroups: NavGroup[] = [
+const navGroups = (activeWaybills: number, delayedWaybills: number): NavGroup[] => [
   {
     groupLabel: 'Operations',
     links: [
@@ -45,14 +46,14 @@ const navGroups: NavGroup[] = [
         id: 'dispatch',
         label: 'Dispatch Board',
         icon: <LayoutGrid size={17} strokeWidth={1.8} />,
-        badge: '12',
+        badge: activeWaybills > 0 ? String(activeWaybills) : undefined,
         badgeColor: 'bg-blue-500',
       },
       {
         id: 'waybills',
         label: 'Cargo Waybills',
         icon: <FileText size={17} strokeWidth={1.8} />,
-        badge: '3',
+        badge: delayedWaybills > 0 ? String(delayedWaybills) : undefined,
         badgeColor: 'bg-amber-500',
       },
       {
@@ -89,6 +90,45 @@ const navGroups: NavGroup[] = [
 const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClose }) => {
   const { user, signOut } = useAuth()
   const initial = user?.email?.[0].toUpperCase() || 'U'
+
+  const [activeWaybills, setActiveWaybills] = useState(0)
+  const [delayedWaybills, setDelayedWaybills] = useState(0)
+  const [fleetStats, setFleetStats] = useState({ active: 0, inTransit: 0, maintenance: 0, total: 0 })
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const [waybillRes, fleetRes] = await Promise.all([
+        supabase.from('waybills').select('status'),
+        supabase.from('prime_movers').select('status'),
+      ])
+
+      if (waybillRes.data) {
+        setActiveWaybills(waybillRes.data.filter(w => w.status === 'In Transit' || w.status === 'Loading').length)
+        setDelayedWaybills(waybillRes.data.filter(w => w.status === 'Delayed').length)
+      }
+
+      if (fleetRes.data) {
+        const trucks = fleetRes.data
+        setFleetStats({
+          active: trucks.filter(t => t.status === 'Active' || t.status === 'Pier Standby').length,
+          inTransit: trucks.filter(t => t.status === 'In Transit').length,
+          maintenance: trucks.filter(t => t.status === 'Maintenance').length,
+          total: trucks.length,
+        })
+      }
+    }
+    fetchStats()
+
+    // Realtime subscription for live badge updates
+    const channel = supabase.channel('sidebar-stats')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'waybills' }, fetchStats)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'prime_movers' }, fetchStats)
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [])
+
+  const groups = navGroups(activeWaybills, delayedWaybills)
 
   return (
     <aside
@@ -128,7 +168,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
 
       {/* ── Navigation ── */}
       <nav className="flex-1 overflow-y-auto sidebar-scroll py-4 px-3">
-        {navGroups.map((group, gi) => (
+        {groups.map((group, gi) => (
           <div key={gi} className={gi > 0 ? 'mt-6' : ''}>
             <p className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold uppercase tracking-widest px-3 mb-1.5">
               {group.groupLabel}
@@ -199,9 +239,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
           </p>
           <div className="space-y-2.5">
             {[
-              { label: 'Active Trucks', value: '48', color: 'bg-emerald-400' },
-              { label: 'In Transit', value: '31', color: 'bg-blue-400' },
-              { label: 'Maintenance', value: '5', color: 'bg-amber-400' },
+              { label: 'Active Trucks', value: String(fleetStats.active), color: 'bg-emerald-400' },
+              { label: 'In Transit', value: String(fleetStats.inTransit), color: 'bg-blue-400' },
+              { label: 'Maintenance', value: String(fleetStats.maintenance), color: 'bg-amber-400' },
             ].map((stat) => (
               <div key={stat.label} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -216,10 +256,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
           <div className="mt-3 h-1.5 rounded-full bg-white/6 overflow-hidden">
             <div
               className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-blue-500"
-              style={{ width: '79%' }}
+              style={{ width: fleetStats.total > 0 ? `${Math.round(((fleetStats.active + fleetStats.inTransit) / fleetStats.total) * 100)}%` : '0%' }}
             />
           </div>
-          <p className="text-slate-500 dark:text-slate-400 text-[10px] mt-1.5">79% utilisation</p>
+          <p className="text-slate-500 dark:text-slate-400 text-[10px] mt-1.5">
+            {fleetStats.total > 0 ? `${Math.round(((fleetStats.active + fleetStats.inTransit) / fleetStats.total) * 100)}% utilisation` : 'No fleet data'}
+          </p>
         </div>
       </nav>
 

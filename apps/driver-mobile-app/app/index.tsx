@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native'
 import { router } from 'expo-router'
 import { supabase } from '../lib/supabase'
 import { Truck } from 'lucide-react-native'
@@ -10,32 +10,29 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false)
 
   const handleLogin = async () => {
-    if (!email || !password) return
-    setLoading(true)
-    
-    // For this demonstration, we'll bypass actual auth if keys aren't real,
-    // but here is the actual Supabase Auth implementation:
-    /*
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    if (error) {
-      Alert.alert('Login Failed', error.message)
-      setLoading(false)
+    if (!email || !password) {
+      Alert.alert('Missing Fields', 'Please enter your Driver ID (email) and password.')
       return
     }
-    */
-    
-    // Simulate network delay for demo
-    setTimeout(() => {
-      setLoading(false)
-      router.replace('/dashboard')
-    }, 1000)
+    setLoading(true)
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+
+    setLoading(false)
+
+    if (error) {
+      Alert.alert('Authentication Failed', error.message)
+      return
+    }
+
+    router.replace('/dashboard')
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <View style={styles.logoContainer}>
         <Truck color="#10b981" size={64} />
         <Text style={styles.logoText}>CargoNode</Text>
@@ -51,6 +48,7 @@ export default function LoginScreen() {
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
+          editable={!loading}
         />
         <TextInput
           style={styles.input}
@@ -59,11 +57,13 @@ export default function LoginScreen() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
+          editable={!loading}
         />
-        <TouchableOpacity 
-          style={styles.button} 
+        <TouchableOpacity
+          style={[styles.button, loading && styles.buttonDisabled]}
           onPress={handleLogin}
           disabled={loading}
+          activeOpacity={0.8}
         >
           {loading ? (
             <ActivityIndicator color="#000" />
@@ -72,7 +72,7 @@ export default function LoginScreen() {
           )}
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   )
 }
 
@@ -121,6 +121,9 @@ const styles = StyleSheet.create({
     padding: 18,
     alignItems: 'center',
     marginTop: 8,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   buttonText: {
     color: '#000000',

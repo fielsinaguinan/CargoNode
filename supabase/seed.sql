@@ -31,3 +31,10 @@ INSERT INTO public.gps_logs (prime_mover_id, latitude, longitude, timestamp) VAL
 ('PM-102', 14.5995, 120.9842, NOW() - INTERVAL '1 minute'),
 ('PM-102', 14.6002, 120.9855, NOW() - INTERVAL '30 seconds'),
 ('PM-102', 14.6015, 120.9870, NOW());
+
+-- Seed Notifications
+INSERT INTO public.notifications (type, title, description, is_read, created_at) VALUES
+('alert', 'Overdue Delivery', 'Waybill #WAYBILL123 is 2h overdue — Route: Manila → Laguna', false, NOW() - INTERVAL '3 minutes'),
+('alert', 'Maintenance Required', 'Truck PM-215 scheduled service is past due.', false, NOW() - INTERVAL '18 minutes'),
+('success', 'Cargo Delivered', 'Waybill #WAYBILL456 delivered successfully.', true, NOW() - INTERVAL '1 hour'),
+('info', 'New Waybill Created', 'Waybill #WAYBILL789 created — Batangas to QC.', true, NOW() - INTERVAL '2 hours');

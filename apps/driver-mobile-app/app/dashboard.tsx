@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert, ActivityIndicator } from 'react-native'
 import * as Location from 'expo-location'
 import * as Network from 'expo-network'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { supabase } from '../lib/supabase'
-import { MapPin, Wifi, WifiOff, Package, CheckCircle } from 'lucide-react-native'
+import { MapPin, Wifi, WifiOff, Package, CheckCircle, LogOut } from 'lucide-react-native'
 
 const ASYNC_STORAGE_SYNC_KEY = '@cargonode_gps_queue'
 
@@ -14,13 +14,64 @@ export default function DashboardScreen() {
   const [queuedSyncs, setQueuedSyncs] = useState(0)
   const pulseAnim = useRef(new Animated.Value(1)).current
 
+  // Driver identity & assigned truck
+  const [primMoverId, setPrimMoverId] = useState<string | null>(null)
+  const [activeWaybill, setActiveWaybill] = useState<any | null>(null)
+  const [loadingProfile, setLoadingProfile] = useState(true)
+
+  // Fetch the authenticated driver's assigned prime mover + active waybill
+  useEffect(() => {
+    const fetchDriverProfile = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        // Prefer prime_mover_id from user metadata (set by admin when creating driver account)
+        const metaPmId = user.user_metadata?.prime_mover_id as string | undefined
+
+        if (metaPmId) {
+          setPrimMoverId(metaPmId)
+          // Fetch this truck's current active waybill
+          const { data: waybill } = await supabase
+            .from('waybills')
+            .select('*')
+            .eq('prime_mover_id', metaPmId)
+            .in('status', ['Loading', 'In Transit'])
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single()
+          if (waybill) setActiveWaybill(waybill)
+        } else {
+          // Fallback for demo: pick the first active waybill in the system
+          const { data: waybill } = await supabase
+            .from('waybills')
+            .select('*')
+            .in('status', ['Loading', 'In Transit'])
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single()
+          if (waybill) {
+            setActiveWaybill(waybill)
+            setPrimMoverId(waybill.prime_mover_id)
+          }
+        }
+      } catch (e) {
+        console.error('Failed to fetch driver profile:', e)
+      } finally {
+        setLoadingProfile(false)
+      }
+    }
+
+    fetchDriverProfile()
+  }, [])
+
   // Pulse animation for the Start Shift button
   useEffect(() => {
     if (shiftActive) {
       Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, { toValue: 1.1, duration: 1000, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true })
+          Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
         ])
       ).start()
     } else {
@@ -38,11 +89,9 @@ export default function DashboardScreen() {
       const currentOnline = netState.isConnected && netState.isInternetReachable !== false
       setIsOnline(!!currentOnline)
 
-      // If we regained connection, flush the queue
       if (currentOnline) {
         await flushSyncQueue()
       } else {
-        // Update local queue count for UI
         const stored = await AsyncStorage.getItem(ASYNC_STORAGE_SYNC_KEY)
         if (stored) {
           const queue = JSON.parse(stored)
@@ -51,19 +100,18 @@ export default function DashboardScreen() {
       }
     }
 
-    // Check network every 10 seconds
     interval = setInterval(checkNetworkAndFlush, 10000)
     checkNetworkAndFlush()
 
     return () => clearInterval(interval)
   }, [])
 
-  // GPS Telemetry Engine (30s interval)
+  // GPS Telemetry Engine (30s interval) — P1: payload strictly matches gps_logs schema
   useEffect(() => {
     let locationInterval: NodeJS.Timeout
 
     const captureLocation = async () => {
-      if (!shiftActive) return
+      if (!shiftActive || !primMoverId) return
 
       try {
         const { status } = await Location.requestForegroundPermissionsAsync()
@@ -74,40 +122,31 @@ export default function DashboardScreen() {
         }
 
         const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
-        
+
+        // Payload strictly matches public.gps_logs schema:
+        // (id UUID default, prime_mover_id, latitude, longitude, timestamp default NOW(), created_at default NOW())
         const payload = {
-          prime_mover_id: 'PM-215', // Hardcoded for demo, normally from Auth context
+          prime_mover_id: primMoverId,
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
-          speed: location.coords.speed || 0,
-          recorded_at: new Date().toISOString()
+          // timestamp and created_at use DB defaults — no overrides needed
         }
 
         const netState = await Network.getNetworkStateAsync()
         if (netState.isConnected) {
-          // ONLINE: Direct insert
           const { error } = await supabase.from('gps_logs').insert([payload])
           if (error) throw error
-          console.log('GPS log synced directly')
+          console.log(`[GPS] Log synced for ${primMoverId}`)
         } else {
-          // OFFLINE: Queue it
           await queuePayload(payload)
         }
       } catch (e) {
-        console.error('Telemetry Error:', e)
-        // Fallback queueing
-        await queuePayload({
-          prime_mover_id: 'PM-215',
-          latitude: 0,
-          longitude: 0,
-          speed: 0,
-          recorded_at: new Date().toISOString()
-        })
+        console.error('[GPS] Telemetry error:', e)
+        // Do not queue on error — corrupted coordinates shouldn't be stored
       }
     }
 
     if (shiftActive) {
-      // Immediate ping on start, then every 30s
       captureLocation()
       locationInterval = setInterval(captureLocation, 30000)
     }
@@ -115,19 +154,19 @@ export default function DashboardScreen() {
     return () => {
       if (locationInterval) clearInterval(locationInterval)
     }
-  }, [shiftActive])
+  }, [shiftActive, primMoverId])
 
   // --- Offline Sync Protocol Helpers ---
-  const queuePayload = async (payload: any) => {
+  const queuePayload = async (payload: object) => {
     try {
       const stored = await AsyncStorage.getItem(ASYNC_STORAGE_SYNC_KEY)
       const queue = stored ? JSON.parse(stored) : []
       queue.push(payload)
       await AsyncStorage.setItem(ASYNC_STORAGE_SYNC_KEY, JSON.stringify(queue))
       setQueuedSyncs(queue.length)
-      console.log('GPS log queued offline')
+      console.log(`[GPS] Queued offline (${queue.length} pending)`)
     } catch (e) {
-      console.error('Failed to queue payload', e)
+      console.error('[GPS] Failed to queue payload:', e)
     }
   }
 
@@ -139,22 +178,68 @@ export default function DashboardScreen() {
       const queue = JSON.parse(stored)
       if (queue.length === 0) return
 
-      console.log(`Flushing ${queue.length} logs to Supabase...`)
-      
+      console.log(`[GPS] Flushing ${queue.length} offline logs to Supabase...`)
       const { error } = await supabase.from('gps_logs').insert(queue)
-      
+
       if (!error) {
         await AsyncStorage.removeItem(ASYNC_STORAGE_SYNC_KEY)
         setQueuedSyncs(0)
-        console.log('Sync flush successful')
+        console.log('[GPS] Flush successful')
+      } else {
+        console.error('[GPS] Flush failed:', error.message)
       }
     } catch (e) {
-      console.error('Flush failed', e)
+      console.error('[GPS] Flush exception:', e)
     }
   }
 
   const handleMarkDelivered = async () => {
-    Alert.alert('Delivered', 'Waybill has been marked as delivered.')
+    if (!activeWaybill) return
+    Alert.alert(
+      'Confirm Delivery',
+      `Mark waybill ${activeWaybill.tracking_number} as delivered?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm',
+          onPress: async () => {
+            const { error } = await supabase
+              .from('waybills')
+              .update({ status: 'Delivered' })
+              .eq('tracking_number', activeWaybill.tracking_number)
+
+            if (!error) {
+              // Insert final tracking milestone
+              await supabase.from('tracking_milestones').insert({
+                waybill_id: activeWaybill.tracking_number,
+                title: 'Cargo Delivered',
+                location: activeWaybill.destination,
+                status: 'completed',
+                order_index: 99,
+              })
+              setActiveWaybill({ ...activeWaybill, status: 'Delivered' })
+              Alert.alert('Delivered ✓', 'Waybill has been marked as delivered and the client portal has been updated.')
+            } else {
+              Alert.alert('Error', 'Failed to update waybill status: ' + error.message)
+            }
+          }
+        }
+      ]
+    )
+  }
+
+  const handleSignOut = async () => {
+    setShiftActive(false)
+    await supabase.auth.signOut()
+  }
+
+  if (loadingProfile) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator color="#10b981" size="large" />
+        <Text style={{ color: '#64748b', marginTop: 16, fontSize: 13 }}>Authenticating driver profile...</Text>
+      </View>
+    )
   }
 
   return (
@@ -162,15 +247,20 @@ export default function DashboardScreen() {
       {/* Top Header - Network Status */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>TERMINAL HUB</Text>
-        <View style={styles.networkBadge}>
-          {isOnline ? (
-            <Wifi size={16} color="#10b981" />
-          ) : (
-            <WifiOff size={16} color="#ef4444" />
-          )}
-          <Text style={[styles.networkText, { color: isOnline ? '#10b981' : '#ef4444' }]}>
-            {isOnline ? 'ONLINE' : 'OFFLINE'}
-          </Text>
+        <View style={styles.headerRight}>
+          <View style={styles.networkBadge}>
+            {isOnline ? (
+              <Wifi size={16} color="#10b981" />
+            ) : (
+              <WifiOff size={16} color="#ef4444" />
+            )}
+            <Text style={[styles.networkText, { color: isOnline ? '#10b981' : '#ef4444' }]}>
+              {isOnline ? 'ONLINE' : 'OFFLINE'}
+            </Text>
+          </View>
+          <TouchableOpacity onPress={handleSignOut} style={styles.signOutBtn}>
+            <LogOut size={16} color="#64748b" />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -186,13 +276,28 @@ export default function DashboardScreen() {
       <View style={styles.waybillCard}>
         <View style={styles.waybillHeader}>
           <Package size={20} color="#3b82f6" />
-          <Text style={styles.waybillTitle}>ACTIVE WAYBILL</Text>
+          <Text style={styles.waybillTitle}>
+            {activeWaybill ? 'ACTIVE WAYBILL' : 'NO ACTIVE WAYBILL'}
+          </Text>
+          {primMoverId && (
+            <Text style={styles.pmBadge}>{primMoverId}</Text>
+          )}
         </View>
-        <Text style={styles.waybillNumber}>WAY-X88B92</Text>
-        <View style={styles.routeRow}>
-          <MapPin size={16} color="#64748b" />
-          <Text style={styles.routeText}>Manila Pier 4 → Laguna Warehouse</Text>
-        </View>
+        {activeWaybill ? (
+          <>
+            <Text style={styles.waybillNumber}>{activeWaybill.tracking_number}</Text>
+            <View style={styles.routeRow}>
+              <MapPin size={16} color="#64748b" />
+              <Text style={styles.routeText}>
+                {activeWaybill.origin} → {activeWaybill.destination}
+              </Text>
+            </View>
+          </>
+        ) : (
+          <Text style={styles.noWaybillText}>
+            No active waybill assigned to this vehicle. Contact dispatch.
+          </Text>
+        )}
       </View>
 
       {/* Massive Shift Toggle Button */}
@@ -202,24 +307,31 @@ export default function DashboardScreen() {
             style={[styles.shiftBtn, shiftActive ? styles.shiftBtnActive : styles.shiftBtnInactive]}
             onPress={() => setShiftActive(!shiftActive)}
             activeOpacity={0.8}
+            disabled={!primMoverId}
           >
             <Text style={[styles.shiftBtnText, shiftActive ? styles.shiftBtnTextActive : styles.shiftBtnTextInactive]}>
               {shiftActive ? 'END SHIFT' : 'START SHIFT'}
             </Text>
             {shiftActive && <Text style={styles.transmittingText}>Transmitting Telemetry...</Text>}
+            {!primMoverId && <Text style={styles.noTruckText}>No truck assigned</Text>}
           </TouchableOpacity>
         </Animated.View>
       </View>
 
       {/* Mark Delivered Action */}
       <View style={styles.footer}>
-        <TouchableOpacity 
-          style={[styles.deliveredBtn, !shiftActive && { opacity: 0.5 }]} 
+        <TouchableOpacity
+          style={[
+            styles.deliveredBtn,
+            (!shiftActive || !activeWaybill || activeWaybill?.status === 'Delivered') && { opacity: 0.4 }
+          ]}
           onPress={handleMarkDelivered}
-          disabled={!shiftActive}
+          disabled={!shiftActive || !activeWaybill || activeWaybill?.status === 'Delivered'}
         >
           <CheckCircle size={24} color="#000000" />
-          <Text style={styles.deliveredBtnText}>MARK AS DELIVERED</Text>
+          <Text style={styles.deliveredBtnText}>
+            {activeWaybill?.status === 'Delivered' ? 'DELIVERED ✓' : 'MARK AS DELIVERED'}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -245,6 +357,11 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 2,
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   networkBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -259,6 +376,13 @@ const styles = StyleSheet.create({
   networkText: {
     fontSize: 12,
     fontWeight: '800',
+  },
+  signOutBtn: {
+    padding: 8,
+    borderRadius: 10,
+    backgroundColor: '#111111',
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   syncBanner: {
     backgroundColor: '#ef444420',
@@ -291,12 +415,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginBottom: 12,
+    flexWrap: 'wrap',
   },
   waybillTitle: {
     color: '#3b82f6',
     fontWeight: '800',
     fontSize: 12,
     letterSpacing: 1,
+    flex: 1,
+  },
+  pmBadge: {
+    color: '#10b981',
+    fontWeight: '700',
+    fontSize: 11,
+    backgroundColor: '#10b98120',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#10b98140',
   },
   waybillNumber: {
     color: '#ffffff',
@@ -314,6 +451,13 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     fontSize: 14,
     fontWeight: '500',
+    flex: 1,
+  },
+  noWaybillText: {
+    color: '#475569',
+    fontSize: 14,
+    marginTop: 4,
+    fontStyle: 'italic',
   },
   toggleContainer: {
     flex: 1,
@@ -358,6 +502,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 12,
     opacity: 0.8,
+  },
+  noTruckText: {
+    color: '#475569',
+    fontSize: 11,
+    marginTop: 8,
   },
   footer: {
     marginTop: 'auto',

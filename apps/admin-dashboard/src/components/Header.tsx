@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { useTheme } from './ThemeProvider'
 import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
 import type { NavItem } from '../App'
 
 interface HeaderProps {
@@ -25,48 +26,27 @@ interface HeaderProps {
 }
 
 interface Notification {
-  id: number
+  id: string
   type: 'alert' | 'info' | 'success'
   title: string
-  desc: string
-  time: string
-  read: boolean
+  description: string
+  created_at: string
+  is_read: boolean
 }
 
-const notifications: Notification[] = [
-  {
-    id: 1,
-    type: 'alert',
-    title: 'Overdue Delivery',
-    desc: 'Waybill #WB-04812 is 2h overdue — Route: Davao → CDO',
-    time: '3m ago',
-    read: false,
-  },
-  {
-    id: 2,
-    type: 'alert',
-    title: 'Maintenance Required',
-    desc: 'Truck PLT-0094 scheduled service is past due.',
-    time: '18m ago',
-    read: false,
-  },
-  {
-    id: 3,
-    type: 'success',
-    title: 'Cargo Delivered',
-    desc: 'Waybill #WB-04799 delivered successfully in Cebu.',
-    time: '1h ago',
-    read: true,
-  },
-  {
-    id: 4,
-    type: 'info',
-    title: 'New Waybill Created',
-    desc: 'Waybill #WB-04813 created — Manila to Batangas.',
-    time: '2h ago',
-    read: true,
-  },
-]
+const timeAgo = (dateString: string) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  const now = new Date()
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+  if (seconds < 60) return `${Math.max(seconds, 0)}s ago`
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
+}
 
 const notifIcon = (type: Notification['type']) => {
   if (type === 'alert') return <AlertTriangle size={14} className="text-amber-500" />
@@ -77,16 +57,55 @@ const notifIcon = (type: Notification['type']) => {
 const Header: React.FC<HeaderProps> = ({ onMenuClick, onNavigate }) => {
   const { theme, setTheme } = useTheme()
   const { user, signOut } = useAuth()
+  const [notifications, setNotifications] = useState<Notification[]>([])
   const [notifOpen, setNotifOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20)
+      if (data && !error) {
+        setNotifications(data as Notification[])
+      }
+    }
+    fetchNotifications()
+
+    const channel = supabase.channel('public:notifications')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications' },
+        (payload) => {
+          setNotifications((prev) => [payload.new as Notification, ...prev].slice(0, 20))
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
+
+  const markAllRead = async () => {
+    setNotifications(notifications.map(n => ({ ...n, is_read: true })))
+    await supabase.from('notifications').update({ is_read: true }).eq('is_read', false)
+  }
+
+  const markAsRead = async (id: string) => {
+    setNotifications(notifications.map(n => n.id === id ? { ...n, is_read: true } : n))
+    await supabase.from('notifications').update({ is_read: true }).eq('id', id)
+  }
   const notifRef = useRef<HTMLDivElement>(null)
   const profileRef = useRef<HTMLDivElement>(null)
 
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
   const initial = user?.email?.[0].toUpperCase() || 'U'
 
-  const unread = notifications.filter((n) => !n.read).length
+  const unread = notifications.filter((n) => !n.is_read).length
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -176,7 +195,10 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, onNavigate }) => {
                   <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Notifications</h3>
                   <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{unread} unread alerts</p>
                 </div>
-                <button className="text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors">
+                <button 
+                  onClick={markAllRead}
+                  className="text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                >
                   Mark all read
                 </button>
               </div>
@@ -184,9 +206,10 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, onNavigate }) => {
                 {notifications.map((n) => (
                   <li
                     key={n.id}
+                    onClick={() => markAsRead(n.id)}
                     className={[
                       'flex gap-3 px-5 py-3.5 cursor-pointer transition-colors duration-100',
-                      n.read ? 'hover:bg-slate-50 dark:hover:bg-slate-800' : 'bg-amber-50/40 hover:bg-amber-50/70',
+                      n.is_read ? 'hover:bg-slate-50 dark:hover:bg-slate-800' : 'bg-amber-50/40 hover:bg-amber-50/70',
                     ].join(' ')}
                   >
                     <div className="mt-0.5 w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
@@ -195,11 +218,11 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, onNavigate }) => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <p className="text-sm font-medium text-slate-800 dark:text-slate-200 leading-tight">{n.title}</p>
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap">{n.time}</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap">{timeAgo(n.created_at)}</span>
                       </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">{n.desc}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">{n.description}</p>
                     </div>
-                    {!n.read && (
+                    {!n.is_read && (
                       <div className="mt-2 w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
                     )}
                   </li>

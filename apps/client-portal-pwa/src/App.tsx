@@ -50,7 +50,7 @@ function App() {
     if (!result?.waybill) return
 
     const channel = supabase.channel(`public:waybill:${result.waybill.tracking_number}`)
-      .on('postgres', { 
+      .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'tracking_milestones', 
