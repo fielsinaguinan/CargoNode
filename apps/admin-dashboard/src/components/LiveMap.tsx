@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, CircleMarker, Popup, useMap, ZoomControl } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Truck, Wifi } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -96,52 +96,64 @@ export default function LiveMap({ waybills }: LiveMapProps) {
 
   // ── Fetch prime movers + latest GPS positions ─────────────────────────────
   const loadMarkers = useCallback(async () => {
-    // 1. Fetch all prime movers
-    const { data: pms } = await supabase
-      .from('prime_movers')
-      .select('id, status, current_lat, current_lng, last_sync')
-      .order('id')
+    try {
+      // 1. Fetch all prime movers
+      const { data: pms, error: pmsError } = await supabase
+        .from('prime_movers')
+        .select('id, status, last_sync')
+        .order('id')
 
-    if (!pms) return
+      if (pmsError) {
+        console.error('Error fetching prime movers:', pmsError)
+        return
+      }
 
-    // 2. Fetch the single most recent GPS log per prime mover
-    const { data: latestLogs } = await supabase
-      .from('gps_logs')
-      .select('prime_mover_id, latitude, longitude, timestamp')
-      .order('timestamp', { ascending: false })
-      .limit(pms.length * 3) // grab a few per truck
+      if (!pms || pms.length === 0) {
+        setMarkers([])
+        setLastPing(new Date())
+        return
+      }
 
-    // Build a map: prime_mover_id → most recent log
-    const latestByPm: Record<string, { lat: number; lng: number; ts: string }> = {}
-    if (latestLogs) {
-      for (const log of latestLogs) {
-        if (!latestByPm[log.prime_mover_id]) {
-          latestByPm[log.prime_mover_id] = {
-            lat: log.latitude,
-            lng: log.longitude,
-            ts: log.timestamp,
+      // 2. Fetch the single most recent GPS log per prime mover
+      const { data: latestLogs } = await supabase
+        .from('gps_logs')
+        .select('prime_mover_id, latitude, longitude, timestamp')
+        .order('timestamp', { ascending: false })
+        .limit(Math.max(1, pms.length * 3)) // grab a few per truck
+
+      // Build a map: prime_mover_id → most recent log
+      const latestByPm: Record<string, { lat: number; lng: number; ts: string }> = {}
+      if (latestLogs) {
+        for (const log of latestLogs) {
+          if (!latestByPm[log.prime_mover_id]) {
+            latestByPm[log.prime_mover_id] = {
+              lat: log.latitude,
+              lng: log.longitude,
+              ts: log.timestamp,
+            }
           }
         }
       }
+
+      // 3. Merge into marker data, use fallback coords for trucks with no GPS
+      const built: TruckMarker[] = pms.map((pm, idx) => {
+        const gpsLog = latestByPm[pm.id]
+        const fallback = GPS_FALLBACK_OFFSETS[idx % GPS_FALLBACK_OFFSETS.length]
+        return {
+          id: pm.id,
+          status: pm.status,
+          lat: gpsLog?.lat ?? fallback[0],
+          lng: gpsLog?.lng ?? fallback[1],
+          waybill: activeWaybillFor(pm.id),
+          lastSeen: gpsLog?.ts ?? pm.last_sync ?? null,
+        }
+      })
+
+      setMarkers(built)
+      setLastPing(new Date())
+    } finally {
+      setLoading(false)
     }
-
-    // 3. Merge into marker data, use fallback coords for trucks with no GPS
-    const built: TruckMarker[] = pms.map((pm, idx) => {
-      const gpsLog = latestByPm[pm.id]
-      const fallback = GPS_FALLBACK_OFFSETS[idx % GPS_FALLBACK_OFFSETS.length]
-      return {
-        id: pm.id,
-        status: pm.status,
-        lat: gpsLog?.lat ?? (pm.current_lat || fallback[0]),
-        lng: gpsLog?.lng ?? (pm.current_lng || fallback[1]),
-        waybill: activeWaybillFor(pm.id),
-        lastSeen: gpsLog?.ts ?? pm.last_sync ?? null,
-      }
-    })
-
-    setMarkers(built)
-    setLastPing(new Date())
-    setLoading(false)
   }, [activeWaybillFor])
 
   useEffect(() => {
@@ -227,9 +239,10 @@ export default function LiveMap({ waybills }: LiveMapProps) {
         center={MANILA}
         zoom={DEFAULT_ZOOM}
         style={{ width: '100%', height: '100%', background: '#0a0f1a' }}
-        zoomControl={true}
+        zoomControl={false}
         scrollWheelZoom={true}
       >
+        <ZoomControl position="bottomright" />
         <TileLayer url={TILE_URL} attribution={TILE_ATTR} />
         <MapBoundsFitter markers={markers} />
 

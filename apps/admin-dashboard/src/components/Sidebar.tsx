@@ -93,7 +93,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
 
   const [activeWaybills, setActiveWaybills] = useState(0)
   const [delayedWaybills, setDelayedWaybills] = useState(0)
-  const [fleetStats, setFleetStats] = useState({ active: 0, inTransit: 0, maintenance: 0, total: 0 })
+  const [fleetStats, setFleetStats] = useState({ active: 0, inTransit: 0, pierStandby: 0, maintenance: 0, total: 0 })
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -110,7 +110,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
       if (fleetRes.data) {
         const trucks = fleetRes.data
         setFleetStats({
-          active: trucks.filter(t => t.status === 'Active' || t.status === 'Pier Standby').length,
+          active: trucks.filter(t => t.status === 'Active').length,
+          pierStandby: trucks.filter(t => t.status === 'Pier Standby').length,
           inTransit: trucks.filter(t => t.status === 'In Transit').length,
           maintenance: trucks.filter(t => t.status === 'Maintenance').length,
           total: trucks.length,
@@ -239,9 +240,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
           </p>
           <div className="space-y-2.5">
             {[
-              { label: 'Active Trucks', value: String(fleetStats.active), color: 'bg-emerald-400' },
-              { label: 'In Transit', value: String(fleetStats.inTransit), color: 'bg-blue-400' },
-              { label: 'Maintenance', value: String(fleetStats.maintenance), color: 'bg-amber-400' },
+              { label: 'Active Trucks', value: String(fleetStats.active), color: 'bg-blue-400' },
+              { label: 'In Transit', value: String(fleetStats.inTransit), color: 'bg-emerald-400' },
+              { label: 'Pier Standby', value: String(fleetStats.pierStandby), color: 'bg-amber-400' },
+              { label: 'Maintenance', value: String(fleetStats.maintenance), color: 'bg-slate-400' },
             ].map((stat) => (
               <div key={stat.label} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -256,11 +258,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
           <div className="mt-3 h-1.5 rounded-full bg-white/6 overflow-hidden">
             <div
               className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-blue-500"
-              style={{ width: fleetStats.total > 0 ? `${Math.round(((fleetStats.active + fleetStats.inTransit) / fleetStats.total) * 100)}%` : '0%' }}
+              style={{ width: fleetStats.total > 0 ? `${Math.round(((fleetStats.active + fleetStats.inTransit + fleetStats.pierStandby) / fleetStats.total) * 100)}%` : '0%' }}
             />
           </div>
           <p className="text-slate-500 dark:text-slate-400 text-[10px] mt-1.5">
-            {fleetStats.total > 0 ? `${Math.round(((fleetStats.active + fleetStats.inTransit) / fleetStats.total) * 100)}% utilisation` : 'No fleet data'}
+            {fleetStats.total > 0 ? `${Math.round(((fleetStats.active + fleetStats.inTransit + fleetStats.pierStandby) / fleetStats.total) * 100)}% utilisation` : 'No fleet data'}
           </p>
         </div>
       </nav>

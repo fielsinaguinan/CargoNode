@@ -19,12 +19,12 @@ interface DashboardCanvasProps {
 const DashboardCanvas: React.FC<DashboardCanvasProps> = ({ activeNav, setActiveNav }) => {
   const renderPage = () => {
     switch (activeNav) {
-      case 'dispatch':      return <DispatchBoard />
+      case 'dispatch':      return <DispatchBoard setActiveNav={setActiveNav} />
       case 'waybills':      return <CargoWaybills setActiveNav={setActiveNav} />
       case 'allocator':     return <CargoWaybillAllocator />
       case 'maintenance':   return <Maintenance />
       case 'analytics':     return <Analytics />
-      case 'fleet-monitor': return <FleetDispatchMonitor />
+      case 'fleet-monitor': return <FleetDispatchMonitor setActiveNav={setActiveNav} />
       case 'profile':       return <Profile />
       case 'settings':      return <Settings />
       case 'inventory':     return <Inventory setActiveNav={setActiveNav} />

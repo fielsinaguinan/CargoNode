@@ -12,6 +12,7 @@ import {
   Filter,
   RefreshCw,
   MoreHorizontal,
+  ChevronRight,
   Calendar,
 } from 'lucide-react'
 import KPICard from '../KPICard'
@@ -28,7 +29,6 @@ interface Dispatch {
   created_at: string
   prime_movers: {
     id: string
-    plate_number: string
   } | null
 }
 
@@ -39,7 +39,13 @@ const statusConfig = {
   Delivered:    { label: 'Delivered',  color: 'text-emerald-700 bg-emerald-50 border-emerald-200', dot: 'bg-emerald-500' },
 }
 
-const DispatchBoard: React.FC = () => {
+import type { NavItem } from '../../App'
+
+interface DispatchBoardProps {
+  setActiveNav?: (nav: NavItem) => void
+}
+
+const DispatchBoard: React.FC<DispatchBoardProps> = ({ setActiveNav }) => {
   const [filter, setFilter] = useState<string>('all')
   const [waybills, setWaybills] = useState<Dispatch[]>([])
 
@@ -48,7 +54,7 @@ const DispatchBoard: React.FC = () => {
       .from('waybills')
       .select(`
         tracking_number, origin, destination, container_type, status, created_at,
-        prime_movers ( id, plate_number )
+        prime_movers ( id )
       `)
       .order('created_at', { ascending: false })
     if (data) setWaybills(data as Dispatch[])
@@ -174,7 +180,7 @@ const DispatchBoard: React.FC = () => {
                           <Truck size={14} />
                         </div>
                         <div>
-                          <p className="text-slate-800 dark:text-slate-200 font-bold text-xs">{d.prime_movers?.plate_number || 'Unassigned'}</p>
+                          <p className="text-slate-800 dark:text-slate-200 font-bold text-xs">{d.prime_movers?.id || 'Unassigned'}</p>
                         </div>
                       </div>
                     </td>
@@ -209,9 +215,18 @@ const DispatchBoard: React.FC = () => {
                       </span>
                     </td>
                     {/* Actions */}
-                    <td className="px-4 py-4">
-                      <button className="p-1.5 rounded-lg text-slate-300 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition-all duration-150">
+                    <td className="px-4 py-4 text-right whitespace-nowrap">
+                      <button 
+                        onClick={() => setActiveNav?.('waybills')}
+                        className="p-1.5 rounded-lg text-slate-300 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition-all duration-150"
+                      >
                         <MoreHorizontal size={15} />
+                      </button>
+                      <button 
+                        onClick={() => setActiveNav?.('waybills')}
+                        className="ml-1 p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <ChevronRight size={15} />
                       </button>
                     </td>
                   </tr>
@@ -224,7 +239,10 @@ const DispatchBoard: React.FC = () => {
         {/* Table footer */}
         <div className="flex items-center justify-between px-6 py-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50">
           <p className="text-xs text-slate-400 dark:text-slate-500">Showing {filtered.length} of {waybills.length} records</p>
-          <button className="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors">
+          <button 
+            onClick={() => setActiveNav?.('waybills')}
+            className="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
+          >
             View all dispatches
             <ArrowUpRight size={12} />
           </button>

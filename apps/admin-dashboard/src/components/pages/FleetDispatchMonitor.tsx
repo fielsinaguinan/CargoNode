@@ -38,7 +38,13 @@ const statusStyles: Record<string, string> = {
   'Maintenance': 'bg-amber-100 text-amber-800 border-amber-200',
 }
 
-const FleetDispatchMonitor: React.FC = () => {
+import type { NavItem } from '../../App'
+
+interface FleetDispatchMonitorProps {
+  setActiveNav?: (nav: NavItem) => void
+}
+
+const FleetDispatchMonitor: React.FC<FleetDispatchMonitorProps> = ({ setActiveNav }) => {
   const [movers, setMovers] = useState<any[]>([])
   const [waybills, setWaybills] = useState<any[]>([])
   const [alerts, setAlerts] = useState<any[]>([])
@@ -118,10 +124,6 @@ const FleetDispatchMonitor: React.FC = () => {
             >
               <Activity size={14} className="text-blue-500" />
               System Diagnostics
-            </button>
-            <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-slate-900 shadow-sm hover:bg-slate-800 transition-colors">
-              <MapPin size={14} />
-              Full Map View
             </button>
           </div>
         }
@@ -245,7 +247,10 @@ const FleetDispatchMonitor: React.FC = () => {
                 </div>
              )}
           </div>
-          <button className="w-full py-2.5 text-xs font-semibold text-blue-600 hover:bg-slate-50 dark:hover:bg-slate-800 border-t border-slate-100 dark:border-slate-800 transition-colors">
+          <button 
+            onClick={() => setActiveNav?.('waybills')}
+            className="w-full py-2.5 text-xs font-semibold text-blue-600 hover:bg-slate-50 dark:hover:bg-slate-800 border-t border-slate-100 dark:border-slate-800 transition-colors"
+          >
             View Full Schedule
           </button>
         </div>
@@ -315,10 +320,16 @@ const FleetDispatchMonitor: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                    <button className="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-700 hover:bg-slate-200 transition-colors opacity-0 group-hover:opacity-100">
+                    <button 
+                      onClick={() => setActiveNav?.('waybills')}
+                      className="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-700 hover:bg-slate-200 transition-colors opacity-0 group-hover:opacity-100"
+                    >
                       <MoreHorizontal size={15} />
                     </button>
-                    <button className="ml-1 p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors opacity-0 group-hover:opacity-100">
+                    <button 
+                      onClick={() => setActiveNav?.('waybills')}
+                      className="ml-1 p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors opacity-0 group-hover:opacity-100"
+                    >
                       <ChevronRight size={15} />
                     </button>
                   </td>

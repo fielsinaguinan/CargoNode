@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert, ActivityIndi
 import * as Location from 'expo-location'
 import * as Network from 'expo-network'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { router } from 'expo-router'
 import { supabase } from '../lib/supabase'
 import { MapPin, Wifi, WifiOff, Package, CheckCircle, LogOut } from 'lucide-react-native'
 
@@ -64,6 +65,39 @@ export default function DashboardScreen() {
 
     fetchDriverProfile()
   }, [])
+
+  // Real-time listener for waybill assignments
+  useEffect(() => {
+    if (!primMoverId) return
+
+    const fetchCurrentWaybill = async () => {
+      const { data } = await supabase
+        .from('waybills')
+        .select('*')
+        .eq('prime_mover_id', primMoverId)
+        .in('status', ['Loading', 'In Transit'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+      
+      setActiveWaybill(data || null)
+    }
+
+    const channel = supabase
+      .channel('driver_waybills_sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'waybills', filter: `prime_mover_id=eq.${primMoverId}` },
+        () => {
+          fetchCurrentWaybill()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [primMoverId])
 
   // Pulse animation for the Start Shift button
   useEffect(() => {
@@ -193,6 +227,42 @@ export default function DashboardScreen() {
     }
   }
 
+  const handleToggleShift = async () => {
+    const isStarting = !shiftActive
+    
+    try {
+      if (isStarting) {
+        // Start Shift
+        if (primMoverId) {
+          await supabase.from('prime_movers').update({ status: 'In Transit' }).eq('id', primMoverId)
+        }
+        if (activeWaybill && activeWaybill.status === 'Loading') {
+          await supabase.from('waybills').update({ status: 'In Transit' }).eq('tracking_number', activeWaybill.tracking_number)
+          
+          await supabase.from('tracking_milestones').insert({
+            waybill_id: activeWaybill.tracking_number,
+            title: 'Shift Started / In Transit',
+            location: activeWaybill.origin,
+            status: 'in-progress',
+            order_index: 2,
+          })
+          
+          setActiveWaybill({ ...activeWaybill, status: 'In Transit' })
+        }
+        setShiftActive(true)
+      } else {
+        // End Shift
+        if (primMoverId) {
+          await supabase.from('prime_movers').update({ status: 'Pier Standby' }).eq('id', primMoverId)
+        }
+        setShiftActive(false)
+      }
+    } catch (e) {
+      console.error('Failed to toggle shift status:', e)
+      Alert.alert('Error', 'Failed to sync shift status with server.')
+    }
+  }
+
   const handleMarkDelivered = async () => {
     if (!activeWaybill) return
     Alert.alert(
@@ -209,6 +279,11 @@ export default function DashboardScreen() {
               .eq('tracking_number', activeWaybill.tracking_number)
 
             if (!error) {
+              // Update prime_mover status to Active so it reflects empty on map
+              if (primMoverId) {
+                await supabase.from('prime_movers').update({ status: 'Active' }).eq('id', primMoverId)
+              }
+
               // Insert final tracking milestone
               await supabase.from('tracking_milestones').insert({
                 waybill_id: activeWaybill.tracking_number,
@@ -231,6 +306,7 @@ export default function DashboardScreen() {
   const handleSignOut = async () => {
     setShiftActive(false)
     await supabase.auth.signOut()
+    router.replace('/')
   }
 
   if (loadingProfile) {
@@ -305,7 +381,7 @@ export default function DashboardScreen() {
         <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
           <TouchableOpacity
             style={[styles.shiftBtn, shiftActive ? styles.shiftBtnActive : styles.shiftBtnInactive]}
-            onPress={() => setShiftActive(!shiftActive)}
+            onPress={handleToggleShift}
             activeOpacity={0.8}
             disabled={!primMoverId}
           >

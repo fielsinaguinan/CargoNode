@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Search, MapPin, Truck, Check, Loader2, AlertCircle } from 'lucide-react'
+import { Search, MapPin, Truck, Check, Loader2, AlertCircle, Clock } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
 function App() {
@@ -7,10 +7,14 @@ function App() {
   const [isSearching, setIsSearching] = useState(false)
   const [result, setResult] = useState<{ waybill: any, milestones: any[] } | null>(null)
   const [error, setError] = useState('')
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    const saved = localStorage.getItem('cargonode_recent_searches')
+    return saved ? JSON.parse(saved) : []
+  })
 
-  const handleTrack = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!trackingNumber) return
+  const executeTrack = async (trackId: string) => {
+    if (!trackId) return
+    setTrackingNumber(trackId)
     setIsSearching(true)
     setResult(null)
     setError('')
@@ -20,7 +24,7 @@ function App() {
       const { data: waybill, error: waybillError } = await supabase
         .from('waybills')
         .select('*')
-        .eq('tracking_number', trackingNumber.toUpperCase())
+        .eq('tracking_number', trackId.toUpperCase())
         .single()
 
       if (waybillError || !waybill) {
@@ -37,12 +41,24 @@ function App() {
       if (milestonesError) throw milestonesError
 
       setResult({ waybill, milestones: milestones || [] })
+      
+      // Save to recent searches
+      setRecentSearches(prev => {
+        const newSearches = [waybill.tracking_number, ...prev.filter(id => id !== waybill.tracking_number)].slice(0, 3)
+        localStorage.setItem('cargonode_recent_searches', JSON.stringify(newSearches))
+        return newSearches
+      })
     } catch (err) {
       console.error(err)
       setError('We could not find a dispatch manifest with that tracking number. Please check and try again.')
     } finally {
       setIsSearching(false)
     }
+  }
+
+  const handleTrack = async (e: React.FormEvent) => {
+    e.preventDefault()
+    await executeTrack(trackingNumber)
   }
 
   // Subscribe to live updates if we have a result
@@ -124,6 +140,26 @@ function App() {
                 {isSearching ? <Loader2 size={18} className="animate-spin" /> : 'Track Container'}
               </button>
             </form>
+
+            {recentSearches.length > 0 && (
+              <div className="mt-8 animate-fade-in-up">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                  <Clock size={14} /> Recent Searches
+                </p>
+                <div className="space-y-2">
+                  {recentSearches.map(id => (
+                    <button
+                      key={id}
+                      onClick={() => executeTrack(id)}
+                      className="w-full bg-white border border-slate-100 hover:border-blue-200 hover:bg-blue-50/50 p-3 rounded-xl flex items-center justify-between transition-colors group text-left"
+                    >
+                      <span className="font-mono text-sm font-bold text-slate-700 group-hover:text-blue-700">{id}</span>
+                      <span className="text-[10px] font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-wider">Track &rarr;</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
