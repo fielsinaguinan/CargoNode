@@ -1,44 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import {
-  BarChart3,
   TrendingUp,
-  TrendingDown,
   DollarSign,
-  Truck,
   Package,
-  Clock,
   ArrowUpRight,
   ArrowDownRight,
   Activity,
   Map,
-  Calendar,
 } from 'lucide-react'
 import PageHeader from '../PageHeader'
 import { supabase } from '../../lib/supabase'
 
-// Simple bar chart via SVG
-const MiniBarChart: React.FC<{ data: number[]; color: string }> = ({ data, color }) => {
-  const max = Math.max(...data)
-  return (
-    <svg viewBox={`0 0 ${data.length * 14} 40`} className="w-full h-10">
-      {data.map((v, i) => {
-        const h = (v / max) * 36
-        return (
-          <rect
-            key={i}
-            x={i * 14 + 2}
-            y={40 - h}
-            width={10}
-            height={h}
-            rx={3}
-            fill={color}
-            opacity={i === data.length - 1 ? 1 : 0.35}
-          />
-        )
-      })}
-    </svg>
-  )
-}
 
 // Sparkline
 const Sparkline: React.FC<{ data: number[]; color: string }> = ({ data, color }) => {

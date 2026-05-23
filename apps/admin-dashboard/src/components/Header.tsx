@@ -7,7 +7,6 @@ import {
   Sun,
   Shield,
   User,
-  CreditCard,
   LogOut,
   Settings,
   CheckCircle2,

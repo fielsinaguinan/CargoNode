@@ -5,13 +5,15 @@ import {
   Wrench,
   Wifi,
   MapPin,
-  Clock,
   Navigation,
   Activity,
   MoreHorizontal,
   ChevronRight,
   ArrowRight,
-  Loader2
+  Loader2,
+  User,
+  Zap,
+  Link2,
 } from 'lucide-react'
 import PageHeader from '../PageHeader'
 import { supabase } from '../../lib/supabase'
@@ -48,8 +50,18 @@ const FleetDispatchMonitor: React.FC<FleetDispatchMonitorProps> = ({ setActiveNa
   const [movers, setMovers] = useState<any[]>([])
   const [waybills, setWaybills] = useState<any[]>([])
   const [alerts, setAlerts] = useState<any[]>([])
+  const [drivers, setDrivers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [diagOpen, setDiagOpen] = useState(false)
+
+  // Pairing state
+  const [selectedDriver, setSelectedDriver] = useState<string | null>(null)
+  const [selectedTruck, setSelectedTruck] = useState<string | null>(null)
+  const [pairingLoading, setPairingLoading] = useState(false)
+  const [pairingToast, setPairingToast] = useState('')
+
+  // Roster tab
+  const [rosterTab, setRosterTab] = useState<'drivers' | 'trucks'>('drivers')
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,10 +69,12 @@ const FleetDispatchMonitor: React.FC<FleetDispatchMonitorProps> = ({ setActiveNa
       const { data: moversData } = await supabase.from('prime_movers').select('*')
       const { data: waybillsData } = await supabase.from('waybills').select('*')
       const { data: alertsData } = await supabase.from('maintenance_alerts').select('*').eq('status', 'Pending')
+      const { data: driversData } = await supabase.from('drivers').select('*')
 
       if (moversData) setMovers(moversData)
       if (waybillsData) setWaybills(waybillsData)
       if (alertsData) setAlerts(alertsData)
+      if (driversData) setDrivers(driversData)
       setLoading(false)
     }
 
@@ -68,9 +82,10 @@ const FleetDispatchMonitor: React.FC<FleetDispatchMonitorProps> = ({ setActiveNa
 
     // Realtime Subscriptions
     const channel = supabase.channel('fleet_updates')
-      .on('postgres', { event: '*', schema: 'public', table: 'prime_movers' }, () => fetchData())
-      .on('postgres', { event: '*', schema: 'public', table: 'waybills' }, () => fetchData())
-      .on('postgres', { event: '*', schema: 'public', table: 'maintenance_alerts' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'prime_movers' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'waybills' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'maintenance_alerts' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, () => fetchData())
       .subscribe()
 
     return () => {
@@ -89,17 +104,55 @@ const FleetDispatchMonitor: React.FC<FleetDispatchMonitorProps> = ({ setActiveNa
     { label: 'Sync Status', value: 'Optimal', sub: 'Realtime active', icon: <Wifi size={18} />, colorTheme: 'violet' },
   ]
 
-  // Derived List Data
-  const incomingFleet = movers
-    .filter(m => m.status === 'In Transit' || m.status === 'Pier Standby')
-    .slice(0, 4) // Show top 4
-    .map((m, i) => ({
-      id: m.id,
-      driver: `Driver ${String.fromCharCode(65 + i)}`, // Mock initials A, B, C...
-      location: m.current_location || 'Unknown Route',
-      eta: m.status === 'Pier Standby' ? 'Standby' : 'Live Tracking',
-      status: m.status
-    }))
+  // Derived roster data
+  const clockedInDrivers = drivers.filter(d => d.status === 'Available' || d.status === 'On Shift')
+  const standbyTrucks = movers.filter(m => m.status === 'Pier Standby')
+
+  const handlePairDispatch = async () => {
+    if (!selectedDriver || !selectedTruck) return
+    setPairingLoading(true)
+    try {
+      // 1. Update driver: set status to 'On Shift' and bind prime_mover_id
+      await supabase
+        .from('drivers')
+        .update({ status: 'On Shift', prime_mover_id: selectedTruck })
+        .eq('id', selectedDriver)
+
+      // 2. Update truck: set status to 'Active'
+      await supabase
+        .from('prime_movers')
+        .update({ status: 'Active' })
+        .eq('id', selectedTruck)
+
+      // 3. Optionally assign any pending Loading waybill to this truck
+      const loadingWaybill = waybills.find(w => w.status === 'Loading' && !w.prime_mover_id)
+      if (loadingWaybill) {
+        await supabase
+          .from('waybills')
+          .update({ prime_mover_id: selectedTruck })
+          .eq('tracking_number', loadingWaybill.tracking_number)
+      }
+
+      // 4. Create notification
+      const driverObj = drivers.find(d => d.id === selectedDriver)
+      await supabase.from('notifications').insert([{
+        type: 'success',
+        title: 'Dispatch Pairing Confirmed',
+        description: `${driverObj?.full_name || 'Driver'} paired with ${selectedTruck}${loadingWaybill ? ` — assigned ${loadingWaybill.tracking_number}` : ''}.`,
+      }])
+
+      setPairingToast(`✓ ${driverObj?.full_name} paired with ${selectedTruck}`)
+      setSelectedDriver(null)
+      setSelectedTruck(null)
+      setTimeout(() => setPairingToast(''), 3000)
+    } catch (e) {
+      console.error('Pairing error:', e)
+      setPairingToast('Failed to complete pairing')
+      setTimeout(() => setPairingToast(''), 3000)
+    } finally {
+      setPairingLoading(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -112,6 +165,16 @@ const FleetDispatchMonitor: React.FC<FleetDispatchMonitorProps> = ({ setActiveNa
 
   return (
     <div className="space-y-7 animate-fade-in-down">
+      {/* Pairing Toast */}
+      {pairingToast && (
+        <div className="fixed top-6 right-6 z-50 animate-fade-in-down">
+          <div className="bg-slate-900/90 backdrop-blur-xl text-white text-sm font-semibold px-5 py-3 rounded-2xl shadow-2xl border border-white/10 flex items-center gap-2">
+            <Zap size={14} className="text-emerald-400" />
+            {pairingToast}
+          </div>
+        </div>
+      )}
+
       <PageHeader
         title="Fleet Dispatch Monitor"
         subtitle="Command center for live prime mover tracking and container logistics"
@@ -152,7 +215,7 @@ const FleetDispatchMonitor: React.FC<FleetDispatchMonitorProps> = ({ setActiveNa
         })}
       </div>
 
-      {/* Map & Incoming Fleet Grid */}
+      {/* Map & Live Availability Roster Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Map Section */}
         <div className="lg:col-span-2 relative bg-slate-900 rounded-2xl border border-slate-800 shadow-lg overflow-hidden h-80 flex flex-col">
@@ -198,61 +261,135 @@ const FleetDispatchMonitor: React.FC<FleetDispatchMonitorProps> = ({ setActiveNa
           </div>
         </div>
 
-        {/* Incoming Fleet Timeline */}
+        {/* Live Availability Roster & Pairing Interface */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col h-80">
-          <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Incoming Fleet</h3>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Next 60 minutes</p>
+          <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Availability Roster</h3>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Select to pair</p>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full font-bold border border-emerald-200">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                Live
+              </div>
             </div>
-            <Clock size={16} className="text-slate-400 dark:text-slate-500" />
+            {/* Roster Tabs */}
+            <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-0.5">
+              <button
+                onClick={() => setRosterTab('drivers')}
+                className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all ${rosterTab === 'drivers' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 shadow-sm' : 'text-slate-400 dark:text-slate-500'}`}
+              >
+                <User size={11} className="inline mr-1" />
+                Drivers ({clockedInDrivers.length})
+              </button>
+              <button
+                onClick={() => setRosterTab('trucks')}
+                className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all ${rosterTab === 'trucks' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 shadow-sm' : 'text-slate-400 dark:text-slate-500'}`}
+              >
+                <Truck size={11} className="inline mr-1" />
+                Trucks ({standbyTrucks.length})
+              </button>
+            </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-5 relative">
-             {/* Timeline line */}
-             <div className="absolute left-[33px] top-6 bottom-6 w-px bg-slate-100 dark:bg-slate-800" />
-             
-             {incomingFleet.length === 0 ? (
+          <div className="flex-1 overflow-y-auto p-4 space-y-2">
+            {rosterTab === 'drivers' ? (
+              clockedInDrivers.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
-                   <Truck size={24} className="mb-2 opacity-50" />
-                   <p className="text-xs font-medium">No incoming fleet detected.</p>
+                  <User size={24} className="mb-2 opacity-50" />
+                  <p className="text-xs font-medium">No drivers clocked in.</p>
                 </div>
-             ) : (
-                <div className="space-y-6">
-                  {incomingFleet.map((fleet, i) => (
-                    <div key={fleet.id} className="relative flex gap-4 group animate-fade-in-down" style={{animationDelay: `${i * 100}ms`}}>
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 z-10 bg-white dark:bg-slate-900 border-2 ${i === 0 ? 'border-emerald-500 text-emerald-500' : 'border-blue-500 text-blue-500'}`}>
-                          <Truck size={12} />
-                        </div>
-                        <div className="flex-1 min-w-0 pt-0.5">
-                          <div className="flex items-start justify-between">
-                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{fleet.id}</p>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${i === 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
-                              {fleet.eta}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5">
-                            <MapPin size={10} className="text-slate-400 dark:text-slate-500" />
-                            {fleet.location}
-                          </p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <span className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-[9px] font-bold text-slate-600 dark:text-slate-400 flex items-center justify-center">
-                              {fleet.driver.charAt(0)}
-                            </span>
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400">{fleet.driver}</span>
-                            <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-auto">{fleet.status}</span>
-                          </div>
-                        </div>
+              ) : (
+                clockedInDrivers.map(d => (
+                  <button
+                    key={d.id}
+                    onClick={() => d.status === 'Available' && setSelectedDriver(selectedDriver === d.id ? null : d.id)}
+                    disabled={d.status !== 'Available'}
+                    className={[
+                      'w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left',
+                      selectedDriver === d.id
+                        ? 'border-blue-400 bg-blue-50/60 dark:bg-blue-950/40 ring-2 ring-blue-400/30'
+                        : d.status === 'Available'
+                          ? 'border-slate-100 dark:border-slate-800 hover:border-blue-200 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer'
+                          : 'border-slate-100 dark:border-slate-800 opacity-50 cursor-not-allowed',
+                    ].join(' ')}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                      d.status === 'Available' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
+                    }`}>
+                      {d.full_name.split(' ').map((n: string) => n[0]).join('')}
                     </div>
-                  ))}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{d.full_name}</p>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{d.email}</p>
+                    </div>
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
+                      d.status === 'Available' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
+                    }`}>
+                      {d.status}
+                    </span>
+                  </button>
+                ))
+              )
+            ) : (
+              standbyTrucks.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
+                  <Truck size={24} className="mb-2 opacity-50" />
+                  <p className="text-xs font-medium">No standby trucks.</p>
                 </div>
-             )}
+              ) : (
+                standbyTrucks.map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => setSelectedTruck(selectedTruck === t.id ? null : t.id)}
+                    className={[
+                      'w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left',
+                      selectedTruck === t.id
+                        ? 'border-amber-400 bg-amber-50/60 dark:bg-amber-950/40 ring-2 ring-amber-400/30'
+                        : 'border-slate-100 dark:border-slate-800 hover:border-amber-200 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer',
+                    ].join(' ')}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center text-amber-700 flex-shrink-0">
+                      <Truck size={14} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{t.id}</p>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                        <MapPin size={9} /> {t.current_location || 'Terminal'}
+                      </p>
+                    </div>
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                      Standby
+                    </span>
+                  </button>
+                ))
+              )
+            )}
           </div>
-          <button 
-            onClick={() => setActiveNav?.('waybills')}
-            className="w-full py-2.5 text-xs font-semibold text-blue-600 hover:bg-slate-50 dark:hover:bg-slate-800 border-t border-slate-100 dark:border-slate-800 transition-colors"
-          >
-            View Full Schedule
-          </button>
+
+          {/* Pairing Action Bar */}
+          <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50">
+            {selectedDriver && selectedTruck ? (
+              <button
+                onClick={handlePairDispatch}
+                disabled={pairingLoading}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold shadow-lg shadow-blue-500/25 transition-all active:scale-[0.98] disabled:opacity-60"
+              >
+                {pairingLoading ? <Loader2 size={14} className="animate-spin" /> : <Link2 size={14} />}
+                Confirm Pairing / Assign Shift
+              </button>
+            ) : (
+              <div className="text-center">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                  {!selectedDriver && !selectedTruck
+                    ? 'Select a driver and a truck to pair'
+                    : selectedDriver && !selectedTruck
+                      ? '✓ Driver selected — now select a truck'
+                      : '✓ Truck selected — now select a driver'}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

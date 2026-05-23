@@ -13,6 +13,7 @@ import {
   LogOut,
   MonitorDot,
   PenTool,
+  ClipboardList,
 } from 'lucide-react'
 import type { NavItem } from '../App'
 import { useAuth } from '../contexts/AuthContext'
@@ -38,7 +39,7 @@ interface NavGroup {
   links: NavLink[]
 }
 
-const navGroups = (activeWaybills: number, delayedWaybills: number): NavGroup[] => [
+const navGroups = (activeWaybills: number, delayedWaybills: number, pendingBookingsCount: number): NavGroup[] => [
   {
     groupLabel: 'Operations',
     links: [
@@ -60,6 +61,13 @@ const navGroups = (activeWaybills: number, delayedWaybills: number): NavGroup[] 
         id: 'allocator',
         label: 'Waybill Allocator',
         icon: <PenTool size={17} strokeWidth={1.8} />,
+      },
+      {
+        id: 'bookings',
+        label: 'Pending Bookings',
+        icon: <ClipboardList size={17} strokeWidth={1.8} />,
+        badge: pendingBookingsCount > 0 ? String(pendingBookingsCount) : undefined,
+        badgeColor: 'bg-amber-500',
       },
     ],
   },
@@ -94,12 +102,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
   const [activeWaybills, setActiveWaybills] = useState(0)
   const [delayedWaybills, setDelayedWaybills] = useState(0)
   const [fleetStats, setFleetStats] = useState({ active: 0, inTransit: 0, pierStandby: 0, maintenance: 0, total: 0 })
+  const [pendingBookingsCount, setPendingBookingsCount] = useState(0)
 
   useEffect(() => {
     const fetchStats = async () => {
-      const [waybillRes, fleetRes] = await Promise.all([
+      const [waybillRes, fleetRes, bookingsRes] = await Promise.all([
         supabase.from('waybills').select('status'),
         supabase.from('prime_movers').select('status'),
+        supabase.from('customer_bookings').select('status').eq('status', 'Pending'),
       ])
 
       if (waybillRes.data) {
@@ -117,6 +127,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
           total: trucks.length,
         })
       }
+
+      if (bookingsRes.data) {
+        setPendingBookingsCount(bookingsRes.data.length)
+      }
     }
     fetchStats()
 
@@ -124,12 +138,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
     const channel = supabase.channel('sidebar-stats')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'waybills' }, fetchStats)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'prime_movers' }, fetchStats)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'customer_bookings' }, fetchStats)
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
   }, [])
 
-  const groups = navGroups(activeWaybills, delayedWaybills)
+  const groups = navGroups(activeWaybills, delayedWaybills, pendingBookingsCount)
 
   return (
     <aside

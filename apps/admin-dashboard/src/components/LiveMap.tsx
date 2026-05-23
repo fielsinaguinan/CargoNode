@@ -37,14 +37,6 @@ const STATUS_COLOR: Record<string, string> = {
   'Signal Lost':  '#94a3b8', // muted
 }
 
-const STATUS_LABEL_COLOR: Record<string, string> = {
-  'In Transit':   'text-emerald-400 bg-emerald-400/10 border-emerald-400/30',
-  'Active':       'text-blue-400 bg-blue-400/10 border-blue-400/30',
-  'Pier Standby': 'text-amber-400 bg-amber-400/10 border-amber-400/30',
-  'Maintenance':  'text-slate-400 bg-slate-400/10 border-slate-400/30',
-  'Signal Lost':  'text-slate-500 bg-slate-500/10 border-slate-500/30',
-}
-
 // Manila area cluster points for trucks with no GPS data — spread so they don't overlap
 const GPS_FALLBACK_OFFSETS: [number, number][] = [
   [14.5935, 120.9798],

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Package2, Search, Filter, Plus, ArrowUpRight, CheckCircle2, Clock, AlertTriangle, MoreHorizontal, MapPin } from 'lucide-react'
+import { Package2, Search, Filter, Plus, ArrowUpRight, MoreHorizontal, MapPin } from 'lucide-react'
 import PageHeader from '../PageHeader'
 import { supabase } from '../../lib/supabase'
 import type { NavItem } from '../../App'

@@ -6,6 +6,7 @@ import CargoWaybillAllocator from './pages/CargoWaybillAllocator'
 import Maintenance from './pages/Maintenance'
 import Analytics from './pages/Analytics'
 import FleetDispatchMonitor from './pages/FleetDispatchMonitor'
+import PendingBookings from './pages/PendingBookings'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 import Inventory from './pages/Inventory'
@@ -22,6 +23,7 @@ const DashboardCanvas: React.FC<DashboardCanvasProps> = ({ activeNav, setActiveN
       case 'dispatch':      return <DispatchBoard setActiveNav={setActiveNav} />
       case 'waybills':      return <CargoWaybills setActiveNav={setActiveNav} />
       case 'allocator':     return <CargoWaybillAllocator />
+      case 'bookings':      return <PendingBookings />
       case 'maintenance':   return <Maintenance />
       case 'analytics':     return <Analytics />
       case 'fleet-monitor': return <FleetDispatchMonitor setActiveNav={setActiveNav} />

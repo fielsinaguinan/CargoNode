@@ -5,7 +5,7 @@ import * as Network from 'expo-network'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { router } from 'expo-router'
 import { supabase } from '../lib/supabase'
-import { MapPin, Wifi, WifiOff, Package, CheckCircle, LogOut } from 'lucide-react-native'
+import { MapPin, Wifi, WifiOff, Package, CheckCircle, LogOut, Zap } from 'lucide-react-native'
 
 const ASYNC_STORAGE_SYNC_KEY = '@cargonode_gps_queue'
 
@@ -14,47 +14,81 @@ export default function DashboardScreen() {
   const [isOnline, setIsOnline] = useState(true)
   const [queuedSyncs, setQueuedSyncs] = useState(0)
   const pulseAnim = useRef(new Animated.Value(1)).current
+  const glowAnim = useRef(new Animated.Value(0.3)).current
 
   // Driver identity & assigned truck
   const [primMoverId, setPrimMoverId] = useState<string | null>(null)
   const [activeWaybill, setActiveWaybill] = useState<any | null>(null)
   const [loadingProfile, setLoadingProfile] = useState(true)
 
-  // Fetch the authenticated driver's assigned prime mover + active waybill
+  // Driver profile from public.drivers table
+  const [driverProfile, setDriverProfile] = useState<any | null>(null)
+  const [clockingIn, setClockingIn] = useState(false)
+
+  // Determine if we should show the Clock-In Lobby
+  const showLobby = driverProfile && 
+    (driverProfile.status === 'Off Duty' || driverProfile.status === 'Available') && 
+    !driverProfile.prime_mover_id
+
+  // Fetch driver profile from public.drivers table + waybill
   useEffect(() => {
     const fetchDriverProfile = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
 
-        // Prefer prime_mover_id from user metadata (set by admin when creating driver account)
-        const metaPmId = user.user_metadata?.prime_mover_id as string | undefined
+        // Try to find the driver in public.drivers by their auth user id
+        const { data: driver } = await supabase
+          .from('drivers')
+          .select('*')
+          .eq('id', user.id)
+          .single()
 
-        if (metaPmId) {
-          setPrimMoverId(metaPmId)
-          // Fetch this truck's current active waybill
-          const { data: waybill } = await supabase
-            .from('waybills')
-            .select('*')
-            .eq('prime_mover_id', metaPmId)
-            .in('status', ['Loading', 'In Transit'])
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single()
-          if (waybill) setActiveWaybill(waybill)
-        } else {
-          // Fallback for demo: pick the first active waybill in the system
-          const { data: waybill } = await supabase
-            .from('waybills')
-            .select('*')
-            .in('status', ['Loading', 'In Transit'])
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single()
-          if (waybill) {
-            setActiveWaybill(waybill)
-            setPrimMoverId(waybill.prime_mover_id)
+        if (driver) {
+          setDriverProfile(driver)
+          if (driver.prime_mover_id) {
+            setPrimMoverId(driver.prime_mover_id)
+            // Fetch this truck's current active waybill
+            const { data: waybill } = await supabase
+              .from('waybills')
+              .select('*')
+              .eq('prime_mover_id', driver.prime_mover_id)
+              .in('status', ['Loading', 'In Transit'])
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single()
+            if (waybill) setActiveWaybill(waybill)
           }
+        } else {
+          // Fallback: use user metadata for prime_mover_id (legacy behavior)
+          const metaPmId = user.user_metadata?.prime_mover_id as string | undefined
+          if (metaPmId) {
+            setPrimMoverId(metaPmId)
+            const { data: waybill } = await supabase
+              .from('waybills')
+              .select('*')
+              .eq('prime_mover_id', metaPmId)
+              .in('status', ['Loading', 'In Transit'])
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single()
+            if (waybill) setActiveWaybill(waybill)
+          } else {
+            // Demo fallback: pick first active waybill
+            const { data: waybill } = await supabase
+              .from('waybills')
+              .select('*')
+              .in('status', ['Loading', 'In Transit'])
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single()
+            if (waybill) {
+              setActiveWaybill(waybill)
+              setPrimMoverId(waybill.prime_mover_id)
+            }
+          }
+          // Create a minimal driver profile state for non-drivers table users
+          setDriverProfile({ status: 'Available', prime_mover_id: metaPmId || null })
         }
       } catch (e) {
         console.error('Failed to fetch driver profile:', e)
@@ -64,6 +98,50 @@ export default function DashboardScreen() {
     }
 
     fetchDriverProfile()
+  }, [])
+
+  // Real-time subscription to the driver's own profile in public.drivers
+  useEffect(() => {
+    const setupRealtimeDriverWatch = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const channel = supabase
+        .channel('driver_profile_watch')
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'drivers', filter: `id=eq.${user.id}` },
+          async (payload) => {
+            const updatedDriver = payload.new as any
+            setDriverProfile(updatedDriver)
+
+            // If prime_mover_id just became non-null, transition to active shift
+            if (updatedDriver.prime_mover_id) {
+              setPrimMoverId(updatedDriver.prime_mover_id)
+              // Fetch the active waybill for this truck
+              const { data: waybill } = await supabase
+                .from('waybills')
+                .select('*')
+                .eq('prime_mover_id', updatedDriver.prime_mover_id)
+                .in('status', ['Loading', 'In Transit'])
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single()
+              setActiveWaybill(waybill || null)
+            } else {
+              // Unbound — reset to lobby
+              setPrimMoverId(null)
+              setActiveWaybill(null)
+              setShiftActive(false)
+            }
+          }
+        )
+        .subscribe()
+
+      return () => { supabase.removeChannel(channel) }
+    }
+
+    setupRealtimeDriverWatch()
   }, [])
 
   // Real-time listener for waybill assignments
@@ -98,6 +176,16 @@ export default function DashboardScreen() {
       supabase.removeChannel(channel)
     }
   }, [primMoverId])
+
+  // Glow animation for clock-in button
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, { toValue: 0.8, duration: 1500, useNativeDriver: true }),
+        Animated.timing(glowAnim, { toValue: 0.3, duration: 1500, useNativeDriver: true }),
+      ])
+    ).start()
+  }, [])
 
   // Pulse animation for the Start Shift button
   useEffect(() => {
@@ -227,6 +315,63 @@ export default function DashboardScreen() {
     }
   }
 
+  const handleClockIn = async () => {
+    setClockingIn(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { error } = await supabase
+        .from('drivers')
+        .update({ status: 'Available' })
+        .eq('id', user.id)
+
+      if (error) throw error
+      setDriverProfile((prev: any) => prev ? { ...prev, status: 'Available' } : prev)
+    } catch (e) {
+      console.error('Clock-in error:', e)
+      Alert.alert('Error', 'Failed to clock in. Please try again.')
+    } finally {
+      setClockingIn(false)
+    }
+  }
+
+  const handleEndShift = async () => {
+    Alert.alert(
+      'End Shift',
+      'This will unbind you from the assigned truck and mark you as Off Duty.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm',
+          onPress: async () => {
+            try {
+              const { data: { user } } = await supabase.auth.getUser()
+              if (!user) return
+
+              // Reset truck to Pier Standby if we had one
+              if (primMoverId) {
+                await supabase.from('prime_movers').update({ status: 'Pier Standby' }).eq('id', primMoverId)
+              }
+
+              // Update driver row: Off Duty + unbind
+              await supabase
+                .from('drivers')
+                .update({ status: 'Off Duty', prime_mover_id: null })
+                .eq('id', user.id)
+
+              setShiftActive(false)
+              // The realtime subscription will handle UI transition
+            } catch (e) {
+              console.error('End shift error:', e)
+              Alert.alert('Error', 'Failed to end shift.')
+            }
+          }
+        }
+      ]
+    )
+  }
+
   const handleToggleShift = async () => {
     const isStarting = !shiftActive
     
@@ -251,11 +396,8 @@ export default function DashboardScreen() {
         }
         setShiftActive(true)
       } else {
-        // End Shift
-        if (primMoverId) {
-          await supabase.from('prime_movers').update({ status: 'Pier Standby' }).eq('id', primMoverId)
-        }
-        setShiftActive(false)
+        // End Shift (via End Shift button instead)
+        handleEndShift()
       }
     } catch (e) {
       console.error('Failed to toggle shift status:', e)
@@ -318,6 +460,88 @@ export default function DashboardScreen() {
     )
   }
 
+  // ═══════════════ CLOCK-IN LOBBY ═══════════════
+  if (showLobby) {
+    return (
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>DRIVER PORTAL</Text>
+          <View style={styles.headerRight}>
+            <View style={styles.networkBadge}>
+              {isOnline ? (
+                <Wifi size={16} color="#10b981" />
+              ) : (
+                <WifiOff size={16} color="#ef4444" />
+              )}
+              <Text style={[styles.networkText, { color: isOnline ? '#10b981' : '#ef4444' }]}>
+                {isOnline ? 'ONLINE' : 'OFFLINE'}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={handleSignOut} style={styles.signOutBtn}>
+              <LogOut size={16} color="#64748b" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Lobby Status Card */}
+        <View style={styles.lobbyStatusCard}>
+          <View style={styles.lobbyStatusDot}>
+            <View style={[styles.statusIndicator, { 
+              backgroundColor: driverProfile.status === 'Available' ? '#10b981' : '#64748b' 
+            }]} />
+          </View>
+          <Text style={styles.lobbyStatusLabel}>
+            {driverProfile.status === 'Available' ? 'CLOCKED IN — AWAITING DISPATCH' : 'OFF DUTY'}
+          </Text>
+          <Text style={styles.lobbyStatusSub}>
+            {driverProfile.status === 'Available' 
+              ? 'Waiting for admin to assign a truck...'
+              : 'Clock in to mark yourself available for dispatch'}
+          </Text>
+        </View>
+
+        {/* Large Clock-In Button */}
+        <View style={styles.toggleContainer}>
+          <Animated.View style={{ opacity: glowAnim, position: 'absolute', width: 320, height: 320, borderRadius: 160, backgroundColor: driverProfile.status === 'Available' ? '#10b981' : '#3b82f6' }} />
+          <TouchableOpacity
+            style={[
+              styles.shiftBtn, 
+              driverProfile.status === 'Available' ? styles.lobbyBtnAvailable : styles.lobbyBtnOffDuty
+            ]}
+            onPress={driverProfile.status === 'Off Duty' ? handleClockIn : undefined}
+            activeOpacity={driverProfile.status === 'Off Duty' ? 0.8 : 1}
+            disabled={clockingIn || driverProfile.status === 'Available'}
+          >
+            {clockingIn ? (
+              <ActivityIndicator color="#10b981" size="large" />
+            ) : (
+              <>
+                <Zap size={48} color={driverProfile.status === 'Available' ? '#10b981' : '#3b82f6'} />
+                <Text style={[styles.shiftBtnText, { color: driverProfile.status === 'Available' ? '#10b981' : '#3b82f6', fontSize: 22, marginTop: 16 }]}>
+                  {driverProfile.status === 'Available' ? 'AVAILABLE' : 'CLOCK IN'}
+                </Text>
+                <Text style={[styles.transmittingText, { color: driverProfile.status === 'Available' ? '#34d399' : '#60a5fa', marginTop: 8 }]}>
+                  {driverProfile.status === 'Available' ? 'Listening for dispatch...' : 'Tap to mark available'}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Hint */}
+        <View style={styles.footer}>
+          <Text style={{ color: '#475569', fontSize: 11, textAlign: 'center', fontWeight: '500' }}>
+            {driverProfile.status === 'Available' 
+              ? 'Your screen will automatically transition when a truck is assigned to you.'
+              : 'Once clocked in, dispatch admins can pair you with a truck.'}
+          </Text>
+        </View>
+      </View>
+    )
+  }
+
+  // ═══════════════ ACTIVE SHIFT DASHBOARD ═══════════════
   return (
     <View style={styles.container}>
       {/* Top Header - Network Status */}
@@ -381,7 +605,7 @@ export default function DashboardScreen() {
         <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
           <TouchableOpacity
             style={[styles.shiftBtn, shiftActive ? styles.shiftBtnActive : styles.shiftBtnInactive]}
-            onPress={handleToggleShift}
+            onPress={shiftActive ? handleEndShift : handleToggleShift}
             activeOpacity={0.8}
             disabled={!primMoverId}
           >
@@ -601,5 +825,53 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     fontSize: 18,
     letterSpacing: 1,
+  },
+  // Clock-In Lobby styles
+  lobbyStatusCard: {
+    backgroundColor: '#111111',
+    borderWidth: 1,
+    borderColor: '#222222',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+  },
+  lobbyStatusDot: {
+    marginBottom: 12,
+  },
+  statusIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  lobbyStatusLabel: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 2,
+    textAlign: 'center',
+  },
+  lobbyStatusSub: {
+    color: '#64748b',
+    fontSize: 12,
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  lobbyBtnOffDuty: {
+    backgroundColor: '#0a1628',
+    borderColor: '#1e40af',
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  lobbyBtnAvailable: {
+    backgroundColor: '#042f2e',
+    borderColor: '#10b981',
+    shadowColor: '#10b981',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 10,
   },
 })

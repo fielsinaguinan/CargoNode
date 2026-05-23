@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Bell, Shield, Smartphone, Globe, SunMoon } from 'lucide-react'
+import { Bell, Smartphone, Globe, SunMoon } from 'lucide-react'
 import PageHeader from '../PageHeader'
 import { useTheme } from '../../components/ThemeProvider'
 

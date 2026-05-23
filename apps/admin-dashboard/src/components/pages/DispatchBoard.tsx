@@ -2,18 +2,16 @@ import React, { useState, useEffect } from 'react'
 import {
   Truck,
   MapPin,
-  Clock,
-  TrendingUp,
   Package,
   AlertTriangle,
   CheckCircle2,
-  Circle,
   ArrowUpRight,
-  Filter,
   RefreshCw,
   MoreHorizontal,
   ChevronRight,
   Calendar,
+  Copy,
+  CheckCheck,
 } from 'lucide-react'
 import KPICard from '../KPICard'
 import PageHeader from '../PageHeader'
@@ -48,6 +46,15 @@ interface DispatchBoardProps {
 const DispatchBoard: React.FC<DispatchBoardProps> = ({ setActiveNav }) => {
   const [filter, setFilter] = useState<string>('all')
   const [waybills, setWaybills] = useState<Dispatch[]>([])
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  const handleCopyWaybill = async (trackNum: string) => {
+    try {
+      await navigator.clipboard.writeText(trackNum)
+      setCopiedId(trackNum)
+      setTimeout(() => setCopiedId(null), 2000)
+    } catch { /* silent */ }
+  }
 
   const fetchWaybills = async () => {
     const { data } = await supabase
@@ -57,7 +64,7 @@ const DispatchBoard: React.FC<DispatchBoardProps> = ({ setActiveNav }) => {
         prime_movers ( id )
       `)
       .order('created_at', { ascending: false })
-    if (data) setWaybills(data as Dispatch[])
+    if (data) setWaybills(data as unknown as Dispatch[])
   }
 
   useEffect(() => {
@@ -171,7 +178,21 @@ const DispatchBoard: React.FC<DispatchBoardProps> = ({ setActiveNav }) => {
                   <tr key={d.tracking_number} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors duration-100 group">
                     {/* ID */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="font-mono text-xs text-blue-600 font-semibold">{d.tracking_number}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-xs text-blue-600 font-semibold">{d.tracking_number}</span>
+                        <button
+                          onClick={() => handleCopyWaybill(d.tracking_number)}
+                          className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-500 transition-all relative"
+                          title="Copy tracking number"
+                        >
+                          {copiedId === d.tracking_number ? <CheckCheck size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                          {copiedId === d.tracking_number && (
+                            <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-lg text-white text-[9px] font-bold px-2 py-0.5 rounded-md whitespace-nowrap shadow-xl animate-fade-in-down">
+                              Copied!
+                            </span>
+                          )}
+                        </button>
+                      </div>
                     </td>
                     {/* Truck Details */}
                     <td className="px-6 py-4 whitespace-nowrap">
