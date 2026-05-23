@@ -83,26 +83,37 @@ function App() {
     await executeTrack(trackingNumber)
   }
 
+  const [bookingError, setBookingError] = useState('')
+
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setBookingError('')
     if (!bookingForm.client_name || !bookingForm.origin || !bookingForm.destination || !bookingForm.target_date) return
     setIsSubmitting(true)
 
     try {
-      const { error } = await supabase.from('customer_bookings').insert([{
+      const payload = {
         client_name: bookingForm.client_name,
         origin: bookingForm.origin,
         destination: bookingForm.destination,
         container_type: bookingForm.container_type,
         target_date: new Date(bookingForm.target_date).toISOString(),
         status: 'Pending',
-      }])
-      if (error) throw error
+      }
+      console.log("Submitting booking payload:", payload)
+      
+      const { error } = await supabase.from('customer_bookings').insert([payload])
+      if (error) {
+        console.error("Supabase insert error:", error)
+        throw error
+      }
+      
       setBookingSuccess(true)
       setBookingForm({ client_name: '', origin: '', destination: '', container_type: '20-footer', target_date: '' })
       setTimeout(() => setBookingSuccess(false), 4000)
-    } catch (err) {
-      console.error(err)
+    } catch (err: any) {
+      console.error("Caught error in booking submit:", err)
+      setBookingError(err.message || 'An unknown error occurred during booking.')
     } finally {
       setIsSubmitting(false)
     }
@@ -373,6 +384,24 @@ function App() {
                     <div>
                       <p className="text-sm font-bold text-emerald-800">Booking Submitted!</p>
                       <p className="text-[11px] text-emerald-600 font-medium mt-0.5">Your request is pending review by our dispatch team.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Error Toast */}
+            {bookingError && (
+              <div className="mb-6 animate-fade-in-down">
+                <div className="relative overflow-hidden bg-white/70 backdrop-blur-xl border border-red-200 rounded-2xl p-4 shadow-lg shadow-red-100/50">
+                  <div className="absolute inset-0 bg-gradient-to-r from-red-50/80 to-rose-50/50 pointer-events-none"></div>
+                  <div className="relative flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+                      <AlertCircle size={20} className="text-red-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-red-800">Booking Failed</p>
+                      <p className="text-[11px] text-red-600 font-medium mt-0.5">{bookingError}</p>
                     </div>
                   </div>
                 </div>

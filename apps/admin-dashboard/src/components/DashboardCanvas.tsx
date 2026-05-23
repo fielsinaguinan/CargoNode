@@ -13,14 +13,34 @@ import Inventory from './pages/Inventory'
 import Help from './pages/Help'
 import DriverRoster from './pages/DriverRoster'
 import FleetRegistry from './pages/FleetRegistry'
+import { useAuth } from '../contexts/AuthContext'
+import { ShieldAlert } from 'lucide-react'
 
 interface DashboardCanvasProps {
   activeNav: NavItem
   setActiveNav: (nav: NavItem) => void
 }
 
+const AccessDenied = () => (
+  <div className="flex flex-col items-center justify-center h-[60vh] text-slate-500 animate-fade-in-down">
+    <div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center mb-4">
+      <ShieldAlert size={32} className="text-red-500" />
+    </div>
+    <h2 className="text-xl font-bold text-slate-200 mb-2">Access Denied</h2>
+    <p className="text-sm">You do not have permission to view this module.</p>
+  </div>
+)
+
 const DashboardCanvas: React.FC<DashboardCanvasProps> = ({ activeNav, setActiveNav }) => {
+  const { userRole } = useAuth()
+
   const renderPage = () => {
+    // RBAC Guardrail
+    const restrictedModules = ['analytics', 'driver-roster', 'fleet-registry', 'settings']
+    if (restrictedModules.includes(activeNav) && userRole !== 'Superadmin') {
+      return <AccessDenied />
+    }
+
     switch (activeNav) {
       case 'dispatch':      return <DispatchBoard setActiveNav={setActiveNav} />
       case 'waybills':      return <CargoWaybills setActiveNav={setActiveNav} />

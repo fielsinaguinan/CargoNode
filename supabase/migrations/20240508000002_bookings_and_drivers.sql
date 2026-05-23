@@ -47,6 +47,15 @@ CREATE POLICY "Anyone can update drivers" ON public.drivers FOR UPDATE TO anon U
 CREATE POLICY "Admins have full access to drivers" ON public.drivers FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- ==========================================
+-- Explicit Grants
+-- ==========================================
+GRANT SELECT, INSERT ON public.customer_bookings TO anon;
+GRANT ALL ON public.customer_bookings TO authenticated;
+
+GRANT SELECT, INSERT, UPDATE ON public.drivers TO anon;
+GRANT ALL ON public.drivers TO authenticated;
+
+-- ==========================================
 -- Supabase Realtime Configurations
 -- ==========================================
 ALTER PUBLICATION supabase_realtime ADD TABLE public.customer_bookings;

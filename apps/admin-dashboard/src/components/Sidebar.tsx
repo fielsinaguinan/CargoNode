@@ -40,79 +40,95 @@ interface NavGroup {
   links: NavLink[]
 }
 
-const navGroups = (activeWaybills: number, delayedWaybills: number, pendingBookingsCount: number): NavGroup[] => [
-  {
-    groupLabel: 'Operations',
-    links: [
-      {
-        id: 'dispatch',
-        label: 'Dispatch Board',
-        icon: <LayoutGrid size={17} strokeWidth={1.8} />,
-        badge: activeWaybills > 0 ? String(activeWaybills) : undefined,
-        badgeColor: 'bg-blue-500',
-      },
-      {
-        id: 'waybills',
-        label: 'Cargo Waybills',
-        icon: <FileText size={17} strokeWidth={1.8} />,
-        badge: delayedWaybills > 0 ? String(delayedWaybills) : undefined,
-        badgeColor: 'bg-amber-500',
-      },
-      {
-        id: 'allocator',
-        label: 'Waybill Allocator',
-        icon: <PenTool size={17} strokeWidth={1.8} />,
-      },
-      {
-        id: 'bookings',
-        label: 'Pending Bookings',
-        icon: <ClipboardList size={17} strokeWidth={1.8} />,
-        badge: pendingBookingsCount > 0 ? String(pendingBookingsCount) : undefined,
-        badgeColor: 'bg-amber-500',
-      },
-    ],
-  },
-  {
-    groupLabel: 'Fleet',
-    links: [
-      {
-        id: 'fleet-monitor',
-        label: 'Fleet Dispatch Monitor',
-        icon: <MonitorDot size={17} strokeWidth={1.8} />,
-        badge: 'Live',
-        badgeColor: 'bg-emerald-600',
-      },
-      {
-        id: 'maintenance',
-        label: 'Maintenance',
-        icon: <Wrench size={17} strokeWidth={1.8} />,
-      },
-      {
-        id: 'analytics',
-        label: 'Analytics',
-        icon: <BarChart3 size={17} strokeWidth={1.8} />,
-      },
-    ],
-  },
-  {
-    groupLabel: 'Administration',
-    links: [
-      {
-        id: 'driver-roster',
-        label: 'Personnel Management',
-        icon: <Users size={17} strokeWidth={1.8} />,
-      },
-      {
-        id: 'fleet-registry',
-        label: 'Asset Registry',
-        icon: <Truck size={17} strokeWidth={1.8} />,
-      },
-    ],
-  },
-]
+const getNavGroups = (activeWaybills: number, delayedWaybills: number, pendingBookingsCount: number, role: string): NavGroup[] => {
+  const allGroups: NavGroup[] = [
+    {
+      groupLabel: 'Operations',
+      links: [
+        {
+          id: 'dispatch',
+          label: 'Dispatch Board',
+          icon: <LayoutGrid size={17} strokeWidth={1.8} />,
+          badge: activeWaybills > 0 ? String(activeWaybills) : undefined,
+          badgeColor: 'bg-blue-500',
+        },
+        {
+          id: 'waybills',
+          label: 'Cargo Waybills',
+          icon: <FileText size={17} strokeWidth={1.8} />,
+          badge: delayedWaybills > 0 ? String(delayedWaybills) : undefined,
+          badgeColor: 'bg-amber-500',
+        },
+        {
+          id: 'allocator',
+          label: 'Waybill Allocator',
+          icon: <PenTool size={17} strokeWidth={1.8} />,
+        },
+        {
+          id: 'bookings',
+          label: 'Pending Bookings',
+          icon: <ClipboardList size={17} strokeWidth={1.8} />,
+          badge: pendingBookingsCount > 0 ? String(pendingBookingsCount) : undefined,
+          badgeColor: 'bg-amber-500',
+        },
+      ],
+    },
+    {
+      groupLabel: 'Fleet',
+      links: [
+        {
+          id: 'fleet-monitor',
+          label: 'Fleet Dispatch Monitor',
+          icon: <MonitorDot size={17} strokeWidth={1.8} />,
+          badge: 'Live',
+          badgeColor: 'bg-emerald-600',
+        },
+        {
+          id: 'maintenance',
+          label: 'Maintenance',
+          icon: <Wrench size={17} strokeWidth={1.8} />,
+        },
+        {
+          id: 'analytics',
+          label: 'Analytics',
+          icon: <BarChart3 size={17} strokeWidth={1.8} />,
+        },
+      ],
+    },
+    {
+      groupLabel: 'Administration',
+      links: [
+        {
+          id: 'driver-roster',
+          label: 'Personnel Management',
+          icon: <Users size={17} strokeWidth={1.8} />,
+        },
+        {
+          id: 'fleet-registry',
+          label: 'Asset Registry',
+          icon: <Truck size={17} strokeWidth={1.8} />,
+        },
+      ],
+    },
+  ]
+
+  if (role !== 'Superadmin') {
+    // Filter out Administration group
+    const filteredGroups = allGroups.filter(g => g.groupLabel !== 'Administration')
+    // Filter out Analytics from Fleet group
+    return filteredGroups.map(g => {
+      if (g.groupLabel === 'Fleet') {
+        return { ...g, links: g.links.filter(l => l.id !== 'analytics') }
+      }
+      return g
+    })
+  }
+
+  return allGroups
+}
 
 const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClose }) => {
-  const { user, signOut } = useAuth()
+  const { user, userRole, signOut } = useAuth()
   const initial = user?.email?.[0].toUpperCase() || 'U'
 
   const [activeWaybills, setActiveWaybills] = useState(0)
@@ -150,7 +166,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
     }
     fetchStats()
 
-    // Realtime subscription for live badge updates
     const channel = supabase.channel('sidebar-stats')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'waybills' }, fetchStats)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'prime_movers' }, fetchStats)
@@ -160,7 +175,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
     return () => { supabase.removeChannel(channel) }
   }, [])
 
-  const groups = navGroups(activeWaybills, delayedWaybills, pendingBookingsCount)
+  const groups = getNavGroups(activeWaybills, delayedWaybills, pendingBookingsCount, userRole)
 
   return (
     <aside
@@ -171,10 +186,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
         open ? 'translate-x-0 animate-slide-in-left' : '-translate-x-full lg:translate-x-0',
       ].join(' ')}
     >
-      {/* ── Logo / Brand ── */}
       <div className="flex items-center justify-between px-5 py-5 border-b border-white/8">
         <div className="flex items-center gap-3 min-w-0">
-          {/* Logo mark */}
           <div className="relative flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-900/50">
             <Truck size={18} className="text-white" strokeWidth={2} />
             <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-slate-900" />
@@ -188,7 +201,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
             </p>
           </div>
         </div>
-        {/* Close button — mobile only */}
         <button
           onClick={onClose}
           className="lg:hidden text-slate-500 dark:text-slate-400 hover:text-slate-300 transition-colors p-1 rounded-lg hover:bg-white/5"
@@ -198,7 +210,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
         </button>
       </div>
 
-      {/* ── Navigation ── */}
       <nav className="flex-1 overflow-y-auto sidebar-scroll py-4 px-3">
         {groups.map((group, gi) => (
           <div key={gi} className={gi > 0 ? 'mt-6' : ''}>
@@ -220,12 +231,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
                           : 'text-slate-400 dark:text-slate-500 hover:bg-white/5 hover:text-slate-200',
                       ].join(' ')}
                     >
-                      {/* Active indicator bar */}
                       {isActive && (
                         <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-blue-400 rounded-r-full" />
                       )}
 
-                      {/* Icon */}
                       <span
                         className={[
                           'transition-colors duration-150',
@@ -235,10 +244,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
                         {link.icon}
                       </span>
 
-                      {/* Label */}
                       <span className="flex-1 text-left">{link.label}</span>
 
-                      {/* Badge or arrow */}
                       {link.badge ? (
                         <span
                           className={`${link.badgeColor ?? 'bg-slate-600'} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center leading-none`}
@@ -264,7 +271,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
           </div>
         ))}
 
-        {/* ── Quick stats strip ── */}
         <div className="mt-6 mx-1 rounded-xl border border-white/8 bg-white/3 p-4">
           <p className="text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest font-semibold mb-3">
             Fleet Status
@@ -285,7 +291,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
               </div>
             ))}
           </div>
-          {/* progress bar total */}
           <div className="mt-3 h-1.5 rounded-full bg-white/6 overflow-hidden">
             <div
               className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-blue-500"
@@ -298,11 +303,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
         </div>
       </nav>
 
-      {/* ── Bottom utility links ── */}
       <div className="px-3 py-4 border-t border-white/8 space-y-0.5">
         {[
           { id: 'inventory' as NavItem, icon: <Package2 size={16} strokeWidth={1.8} />, label: 'Cargo Inventory' },
-          { id: 'settings' as NavItem, icon: <Settings size={16} strokeWidth={1.8} />, label: 'Settings' },
+          ...(userRole === 'Superadmin' ? [{ id: 'settings' as NavItem, icon: <Settings size={16} strokeWidth={1.8} />, label: 'Settings' }] : []),
           { id: 'help' as NavItem, icon: <HelpCircle size={16} strokeWidth={1.8} />, label: 'Help & Support' },
         ].map((item) => {
           const isActive = activeNav === item.id
@@ -323,7 +327,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
           )
         })}
 
-        {/* User session row */}
         <div 
           onClick={() => { setActiveNav('profile'); onClose() }}
           className="mt-3 flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 cursor-pointer group transition-all duration-150"
@@ -333,7 +336,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-slate-200 text-xs font-semibold truncate">{user?.email || 'Unknown User'}</p>
-            <p className="text-slate-500 dark:text-slate-400 text-[10px] truncate">Administrator</p>
+            <p className="text-slate-500 dark:text-slate-400 text-[10px] truncate">{userRole}</p>
           </div>
           <button 
             onClick={(e) => { e.stopPropagation(); signOut(); }}
