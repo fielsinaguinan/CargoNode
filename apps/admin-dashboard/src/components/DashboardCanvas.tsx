@@ -11,6 +11,8 @@ import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 import Inventory from './pages/Inventory'
 import Help from './pages/Help'
+import DriverRoster from './pages/DriverRoster'
+import FleetRegistry from './pages/FleetRegistry'
 
 interface DashboardCanvasProps {
   activeNav: NavItem
@@ -31,6 +33,8 @@ const DashboardCanvas: React.FC<DashboardCanvasProps> = ({ activeNav, setActiveN
       case 'settings':      return <Settings />
       case 'inventory':     return <Inventory setActiveNav={setActiveNav} />
       case 'help':          return <Help />
+      case 'driver-roster': return <DriverRoster />
+      case 'fleet-registry':return <FleetRegistry />
     }
   }
 

@@ -6,7 +6,7 @@ import DashboardCanvas from './components/DashboardCanvas'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import LoginPage from './components/pages/LoginPage'
 
-export type NavItem = 'dispatch' | 'waybills' | 'allocator' | 'bookings' | 'maintenance' | 'analytics' | 'fleet-monitor' | 'profile' | 'settings' | 'inventory' | 'help'
+export type NavItem = 'dispatch' | 'waybills' | 'allocator' | 'bookings' | 'maintenance' | 'analytics' | 'fleet-monitor' | 'profile' | 'settings' | 'inventory' | 'help' | 'driver-roster' | 'fleet-registry'
 
 const DashboardLayout: React.FC = () => {
   const [activeNav, setActiveNav] = useState<NavItem>('dispatch')

@@ -14,6 +14,7 @@ import {
   MonitorDot,
   PenTool,
   ClipboardList,
+  Users,
 } from 'lucide-react'
 import type { NavItem } from '../App'
 import { useAuth } from '../contexts/AuthContext'
@@ -90,6 +91,21 @@ const navGroups = (activeWaybills: number, delayedWaybills: number, pendingBooki
         id: 'analytics',
         label: 'Analytics',
         icon: <BarChart3 size={17} strokeWidth={1.8} />,
+      },
+    ],
+  },
+  {
+    groupLabel: 'Administration',
+    links: [
+      {
+        id: 'driver-roster',
+        label: 'Personnel Management',
+        icon: <Users size={17} strokeWidth={1.8} />,
+      },
+      {
+        id: 'fleet-registry',
+        label: 'Asset Registry',
+        icon: <Truck size={17} strokeWidth={1.8} />,
       },
     ],
   },

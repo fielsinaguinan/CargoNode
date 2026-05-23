@@ -4,5 +4,14 @@
   "private": true,
   "workspaces": [
     "apps/*"
-  ]
+  ],
+  "scripts": {
+    "dev:admin": "npm run dev -w apps/admin-dashboard",
+    "dev:client": "npm run dev -w apps/client-portal-pwa",
+    "dev:driver": "npm run dev -w apps/driver-mobile-app",
+    "dev:all": "concurrently \"npm run dev:admin\" \"npm run dev:client\" \"npm run dev:driver\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
 }
