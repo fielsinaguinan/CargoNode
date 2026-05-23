@@ -23,6 +23,7 @@ interface Booking {
   target_date: string
   status: string
   created_at: string
+  client_id?: string
 }
 
 const PendingBookings: React.FC = () => {
@@ -70,7 +71,7 @@ const PendingBookings: React.FC = () => {
     try {
       const waybillNumber = generateWaybillNumber()
 
-      // 1. Create official waybill
+      // 1. Create official waybill (carrying over client_id UUID)
       const { error: waybillErr } = await supabase.from('waybills').insert([{
         tracking_number: waybillNumber,
         client_name: booking.client_name,
@@ -78,6 +79,7 @@ const PendingBookings: React.FC = () => {
         destination: booking.destination,
         container_type: booking.container_type,
         status: 'Loading',
+        client_id: booking.client_id || null,
       }])
       if (waybillErr) throw waybillErr
 

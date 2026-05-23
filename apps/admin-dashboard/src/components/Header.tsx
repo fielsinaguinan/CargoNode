@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
 import {
-  Search,
   Bell,
   ChevronDown,
   Menu,
@@ -59,7 +58,6 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, onNavigate }) => {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [notifOpen, setNotifOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
-  const [searchFocused, setSearchFocused] = useState(false)
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -130,36 +128,6 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, onNavigate }) => {
       >
         <Menu size={20} />
       </button>
-
-      {/* ── Global Search ── */}
-      <div className={[
-        'relative flex-1 max-w-md transition-all duration-200',
-        searchFocused ? 'max-w-lg' : '',
-      ].join(' ')}>
-        <Search
-          size={15}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none"
-        />
-        <input
-          type="text"
-          placeholder="Search waybills, trucks, drivers…"
-          onFocus={() => setSearchFocused(true)}
-          onBlur={() => setSearchFocused(false)}
-          className={[
-            'w-full pl-9 pr-4 py-2 text-sm rounded-xl',
-            'bg-slate-100 dark:bg-slate-800 border border-transparent',
-            'text-slate-700 dark:text-slate-300 placeholder-slate-400',
-            'outline-none transition-all duration-200',
-            'focus:bg-white focus:border-slate-300 focus:ring-3 focus:ring-blue-500/10',
-          ].join(' ')}
-        />
-        {/* Kbd shortcut hint */}
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-1">
-          <kbd className="text-[10px] text-slate-400 dark:text-slate-500 bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-1 py-0.5 font-mono leading-none">
-            ⌘K
-          </kbd>
-        </span>
-      </div>
 
       {/* ── Right controls ── */}
       <div className="flex items-center gap-1 ml-auto">
