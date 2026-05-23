@@ -139,9 +139,9 @@ const PendingBookings: React.FC = () => {
 
   const statusBadge = (status: string) => {
     switch (status) {
-      case 'Approved': return 'bg-emerald-50 text-emerald-700 border-emerald-200'
-      case 'Rejected': return 'bg-red-50 text-red-700 border-red-200'
-      default: return 'bg-amber-50 text-amber-700 border-amber-200'
+      case 'Approved': return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+      case 'Rejected': return 'bg-destructive/10 text-destructive border-destructive/20'
+      default: return 'bg-accent/10 text-accent border-accent/20'
     }
   }
 
@@ -175,14 +175,14 @@ const PendingBookings: React.FC = () => {
       {/* Stats row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Requests', value: bookings.length.toString(), sub: 'All time', color: 'text-slate-800 dark:text-slate-200', borderTop: 'border-t-slate-400' },
-          { label: 'Pending Review', value: pendingBookings.length.toString(), sub: 'Awaiting action', color: 'text-amber-700', borderTop: 'border-t-amber-500' },
-          { label: 'Approved', value: bookings.filter(b => b.status === 'Approved').length.toString(), sub: 'Waybills created', color: 'text-emerald-700', borderTop: 'border-t-emerald-500' },
-          { label: 'Rejected', value: bookings.filter(b => b.status === 'Rejected').length.toString(), sub: 'Declined', color: 'text-red-700', borderTop: 'border-t-red-500' },
+          { label: 'Total Requests', value: bookings.length.toString(), sub: 'All time', color: 'text-slate-800 dark:text-slate-200', borderTop: 'border-t-primary' },
+          { label: 'Pending Review', value: pendingBookings.length.toString(), sub: 'Awaiting action', color: 'text-accent', borderTop: 'border-t-accent' },
+          { label: 'Approved', value: bookings.filter(b => b.status === 'Approved').length.toString(), sub: 'Waybills created', color: 'text-emerald-500', borderTop: 'border-t-emerald-500' },
+          { label: 'Rejected', value: bookings.filter(b => b.status === 'Rejected').length.toString(), sub: 'Declined', color: 'text-destructive', borderTop: 'border-t-destructive' },
         ].map((s) => (
-          <div key={s.label} className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm px-5 py-4 card-hover border-t-2 ${s.borderTop}`}>
-            <p className={`text-xl font-bold tracking-tight ${s.color} font-[Plus_Jakarta_Sans,sans-serif]`}>{s.value}</p>
-            <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mt-0.5">{s.label}</p>
+          <div key={s.label} className={`bg-white/60 dark:bg-slate-900/60 backdrop-blur-md rounded-2xl border border-slate-200/50 dark:border-slate-700/50 shadow-sm px-5 py-5 card-hover border-t-2 ${s.borderTop} transition-all duration-200`}>
+            <p className={`text-2xl font-bold tracking-tight ${s.color} font-display`}>{s.value}</p>
+            <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mt-1">{s.label}</p>
             <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">{s.sub}</p>
           </div>
         ))}
@@ -190,84 +190,84 @@ const PendingBookings: React.FC = () => {
 
       {/* Pending Bookings Table */}
       {pendingBookings.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-gradient-to-b from-white dark:from-slate-900 to-slate-50/50 dark:to-slate-800/30">
+        <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md rounded-2xl border border-slate-200/50 dark:border-slate-700/50 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100/50 dark:border-slate-800/50 flex items-center justify-between bg-white/40 dark:bg-slate-900/40">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center">
-                <ClipboardList size={18} className="text-amber-600" />
+              <div className="w-9 h-9 rounded-xl bg-accent/10 flex items-center justify-center">
+                <ClipboardList size={18} className="text-accent" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Pending Review</h2>
+                <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-200 font-display">Pending Review</h2>
                 <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{pendingBookings.length} request{pendingBookings.length !== 1 ? 's' : ''} awaiting dispatch action</p>
               </div>
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full font-bold border border-amber-200">
-              <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
-              Live
+            <div className="flex items-center gap-2 text-[11px] text-accent bg-accent/10 px-3 py-1.5 rounded-full font-bold border border-accent/20">
+              <div className="w-2 h-2 rounded-full bg-accent animate-pulse-dot"></div>
+              LIVE
             </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left border-b border-slate-100 dark:border-slate-800">
+                <tr className="text-left border-b border-slate-100/50 dark:border-slate-800/50 bg-slate-50/30 dark:bg-slate-800/20">
                   {['Client', 'Route', 'Container', 'Target Date', 'Submitted', 'Actions'].map(h => (
-                    <th key={h} className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-6 py-3 whitespace-nowrap">{h}</th>
+                    <th key={h} className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-6 py-3.5 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+              <tbody className="divide-y divide-slate-100/50 dark:divide-slate-800/50">
                 {pendingBookings.map((b) => (
-                  <tr key={b.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors duration-100 group">
+                  <tr key={b.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors duration-200 group">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0 font-bold text-xs">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0 font-bold text-xs shadow-sm">
                           {b.client_name.charAt(0)}
                         </div>
-                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{b.client_name}</p>
+                        <p className="text-[13px] font-bold text-slate-800 dark:text-slate-200 font-display">{b.client_name}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
-                        <MapPin size={12} className="text-blue-500 opacity-70" />
+                      <div className="flex items-center gap-2 text-[13px] text-slate-600 dark:text-slate-400 font-medium">
+                        <MapPin size={14} className="text-primary opacity-80" />
                         {b.origin}
-                        <ArrowRight size={10} className="mx-0.5 text-slate-300" />
+                        <ArrowRight size={12} className="mx-1 text-slate-300 dark:text-slate-600" />
                         {b.destination}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5">
-                        <Package size={11} className="text-slate-400 dark:text-slate-500" />
-                        <p className="text-xs font-medium text-slate-700 dark:text-slate-300">{b.container_type}</p>
+                      <div className="flex items-center gap-2">
+                        <Package size={14} className="text-slate-400 dark:text-slate-500" />
+                        <p className="text-[13px] font-medium text-slate-700 dark:text-slate-300">{b.container_type}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                        <Calendar size={11} />
+                      <div className="flex items-center gap-2 text-[13px] text-slate-500 dark:text-slate-400 font-mono">
+                        <Calendar size={14} />
                         {new Date(b.target_date).toLocaleDateString()}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
-                        <Clock size={11} />
+                      <div className="flex items-center gap-2 text-[13px] text-slate-400 dark:text-slate-500 font-mono">
+                        <Clock size={14} />
                         {new Date(b.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2.5">
                         <button
                           onClick={() => handleApprove(b)}
                           disabled={actionLoading === b.id}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-all disabled:opacity-50"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all duration-200 disabled:opacity-50 cursor-pointer"
                         >
-                          {actionLoading === b.id ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
+                          {actionLoading === b.id ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={14} />}
                           Approve
                         </button>
                         <button
                           onClick={() => handleReject(b)}
                           disabled={actionLoading === b.id}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 transition-all disabled:opacity-50"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-destructive bg-destructive/10 border border-destructive/20 hover:bg-destructive/20 transition-all duration-200 disabled:opacity-50 cursor-pointer"
                         >
-                          <XCircle size={12} />
+                          <XCircle size={14} />
                           Reject
                         </button>
                       </div>
@@ -282,39 +282,39 @@ const PendingBookings: React.FC = () => {
 
       {/* Processed Bookings History */}
       {processedBookings.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Processed History</h2>
+        <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md rounded-2xl border border-slate-200/50 dark:border-slate-700/50 shadow-sm overflow-hidden mt-6">
+          <div className="px-6 py-4 border-b border-slate-100/50 dark:border-slate-800/50">
+            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-200 font-display">Processed History</h2>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{processedBookings.length} processed booking{processedBookings.length !== 1 ? 's' : ''}</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left border-b border-slate-100 dark:border-slate-800">
+                <tr className="text-left border-b border-slate-100/50 dark:border-slate-800/50 bg-slate-50/30 dark:bg-slate-800/20">
                   {['Client', 'Route', 'Container', 'Target Date', 'Status'].map(h => (
-                    <th key={h} className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-6 py-3 whitespace-nowrap">{h}</th>
+                    <th key={h} className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-6 py-3.5 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+              <tbody className="divide-y divide-slate-100/50 dark:divide-slate-800/50">
                 {processedBookings.map((b) => (
-                  <tr key={b.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
+                  <tr key={b.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors duration-200">
                     <td className="px-6 py-3.5 whitespace-nowrap">
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-3">
                         <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 flex-shrink-0 text-xs font-bold">
                           {b.client_name.charAt(0)}
                         </div>
-                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">{b.client_name}</p>
+                        <p className="text-[13px] font-semibold text-slate-700 dark:text-slate-300 font-display">{b.client_name}</p>
                       </div>
                     </td>
                     <td className="px-6 py-3.5 whitespace-nowrap">
-                      <span className="text-xs text-slate-600 dark:text-slate-400">{b.origin} → {b.destination}</span>
+                      <span className="text-[13px] text-slate-600 dark:text-slate-400">{b.origin} → {b.destination}</span>
                     </td>
                     <td className="px-6 py-3.5 whitespace-nowrap">
-                      <span className="text-xs text-slate-600 dark:text-slate-400">{b.container_type}</span>
+                      <span className="text-[13px] text-slate-600 dark:text-slate-400">{b.container_type}</span>
                     </td>
                     <td className="px-6 py-3.5 whitespace-nowrap">
-                      <span className="text-xs text-slate-500 dark:text-slate-400">{new Date(b.target_date).toLocaleDateString()}</span>
+                      <span className="text-[13px] text-slate-500 dark:text-slate-400 font-mono">{new Date(b.target_date).toLocaleDateString()}</span>
                     </td>
                     <td className="px-6 py-3.5 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border ${statusBadge(b.status)}`}>
@@ -331,10 +331,10 @@ const PendingBookings: React.FC = () => {
 
       {/* Empty state */}
       {bookings.length === 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-12 text-center">
+        <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md rounded-2xl border border-slate-200/50 dark:border-slate-700/50 shadow-sm p-12 text-center">
           <ClipboardList size={40} className="text-slate-300 mx-auto mb-4" />
-          <h3 className="text-sm font-bold text-slate-600 dark:text-slate-400">No Booking Requests Yet</h3>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Customer booking requests from the Client Portal will appear here.</p>
+          <h3 className="text-sm font-bold text-slate-600 dark:text-slate-400 font-display">No Booking Requests Yet</h3>
+          <p className="text-[13px] text-slate-400 dark:text-slate-500 mt-2">Customer booking requests from the Client Portal will appear here.</p>
         </div>
       )}
     </div>

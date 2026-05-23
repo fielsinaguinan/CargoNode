@@ -6,6 +6,7 @@ import {
   BarChart3,
   X,
   ChevronRight,
+  ChevronLeft,
   Truck,
   Package2,
   Settings,
@@ -142,6 +143,15 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
   const [delayedWaybills, setDelayedWaybills] = useState(0)
   const [fleetStats, setFleetStats] = useState({ active: 0, inTransit: 0, pierStandby: 0, maintenance: 0, total: 0 })
   const [pendingBookingsCount, setPendingBookingsCount] = useState(0)
+  const [isCollapsed, setIsCollapsed] = useState(false)
+
+  useEffect(() => {
+    // Set `--sidebar-width` based on collapse state to align main content with 16px margins
+    document.documentElement.style.setProperty(
+      '--sidebar-width',
+      isCollapsed ? '112px' : '272px'
+    )
+  }, [isCollapsed])
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -187,43 +197,60 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
   return (
     <aside
       className={[
-        'fixed top-0 left-0 z-30 h-screen w-[260px]',
-        'bg-slate-900 flex flex-col',
-        'transition-transform duration-300 ease-in-out',
+        'fixed z-30 flex flex-col',
+        // Mobile layout: anchored to the left, full height, rounded right edge
+        'top-0 bottom-0 left-0 h-screen rounded-r-3xl border-r border-white/5',
+        // Desktop layout: floating, spaced from edges, fully rounded with border and premium shadow
+        'lg:top-4 lg:bottom-4 lg:left-4 lg:h-[calc(100vh-32px)] lg:rounded-3xl lg:border lg:border-white/10 lg:shadow-[0_8px_32px_rgba(0,0,0,0.5)]',
+        isCollapsed ? 'w-[88px] lg:w-[80px]' : 'w-[260px] lg:w-[240px]',
+        'bg-[#0B1120]/95 backdrop-blur-xl',
+        'shadow-[4px_0_24px_-12px_rgba(0,0,0,0.5)]',
+        'transition-all duration-300 ease-in-out',
         open ? 'translate-x-0 animate-slide-in-left' : '-translate-x-full lg:translate-x-0',
       ].join(' ')}
     >
-      <div className="flex items-center justify-between px-5 py-5 border-b border-white/8">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="relative flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-900/50">
-            <Truck size={18} className="text-white" strokeWidth={2} />
-            <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-slate-900" />
+      <div className={`relative flex items-center ${isCollapsed ? 'justify-center px-0' : 'justify-between px-6'} py-6 border-b border-white/5 transition-all duration-300`}>
+        <div className="flex items-center gap-3.5 min-w-0 overflow-hidden">
+          <div className="relative flex-shrink-0 w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30 transition-all duration-300">
+            <Truck size={20} className="text-white" strokeWidth={2} />
+            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#0B1120]" />
           </div>
-          <div className="min-w-0">
-            <p className="text-white font-bold text-sm tracking-tight leading-none font-[Plus_Jakarta_Sans,sans-serif]">
+          <div className={`min-w-0 transition-all duration-300 overflow-hidden ${isCollapsed ? 'opacity-0 max-w-0 flex-none' : 'opacity-100 max-w-[150px] w-auto'}`}>
+            <p className="text-white font-bold text-[15px] tracking-tight leading-none font-display whitespace-nowrap truncate">
               CargoNode
             </p>
-            <p className="text-slate-500 dark:text-slate-400 text-[10px] font-medium tracking-widest uppercase mt-0.5">
+            <p className="text-slate-400 text-[10px] font-medium tracking-widest uppercase mt-1 whitespace-nowrap truncate">
               CEBLE Trucking
             </p>
           </div>
         </div>
+
+        {/* Toggle Button */}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className={`hidden lg:flex absolute top-1/2 -translate-y-1/2 -right-3.5 w-7 h-7 bg-slate-800 border border-white/10 rounded-full items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all duration-300 z-40 shadow-lg cursor-pointer ${isCollapsed ? 'rotate-180 -right-3.5' : ''}`}
+        >
+          <ChevronLeft size={14} />
+        </button>
+
         <button
           onClick={onClose}
-          className="lg:hidden text-slate-500 dark:text-slate-400 hover:text-slate-300 transition-colors p-1 rounded-lg hover:bg-white/5"
+          className="lg:hidden text-slate-500 hover:text-slate-300 transition-colors duration-200 p-1.5 rounded-lg hover:bg-white/5 cursor-pointer"
           aria-label="Close sidebar"
         >
           <X size={18} />
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto sidebar-scroll py-4 px-3">
+      <nav className={`flex-1 overflow-y-auto sidebar-scroll py-6 transition-all duration-300 ${isCollapsed ? 'px-2' : 'px-4'}`}>
         {groups.map((group, gi) => (
-          <div key={gi} className={gi > 0 ? 'mt-6' : ''}>
-            <p className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold uppercase tracking-widest px-3 mb-1.5">
-              {group.groupLabel}
-            </p>
-            <ul className="space-y-0.5">
+          <div key={gi} className={`transition-all duration-300 ${gi > 0 ? (isCollapsed ? 'mt-4' : 'mt-8') : ''}`}>
+            <div className={`transition-all duration-300 ${isCollapsed ? 'mb-0 opacity-0 max-h-0 overflow-hidden' : 'mb-2 opacity-100 max-h-10'}`}>
+               <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest px-3 whitespace-nowrap truncate">
+                 {group.groupLabel}
+               </p>
+            </div>
+            <ul className="space-y-1">
               {group.links.map((link) => {
                 const isActive = activeNav === link.id
                 return (
@@ -231,45 +258,58 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
                     <button
                       onClick={() => { setActiveNav(link.id); onClose() }}
                       className={[
-                        'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium',
-                        'transition-all duration-150 group relative',
+                        'w-full flex items-center py-2.5 rounded-full text-[13px] font-medium relative',
+                        'transition-all duration-300 group cursor-pointer',
+                        isCollapsed ? 'justify-center px-0' : 'gap-3.5 px-3',
                         isActive
-                          ? 'bg-white/10 text-white'
-                          : 'text-slate-400 dark:text-slate-500 hover:bg-white/5 hover:text-slate-200',
+                          ? 'bg-primary/10 text-primary font-semibold'
+                          : 'text-slate-400 hover:bg-white/5 hover:text-slate-200',
                       ].join(' ')}
+                      title={isCollapsed ? link.label : undefined}
                     >
                       {isActive && (
-                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-blue-400 rounded-r-full" />
+                        <span className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-l-full shadow-[-4px_0_12px_var(--color-primary)] transition-all duration-300" />
                       )}
 
                       <span
                         className={[
-                          'transition-colors duration-150',
-                          isActive ? 'text-blue-400' : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-300',
+                          'transition-colors duration-300 flex-shrink-0 relative',
+                          isActive ? 'text-primary' : 'text-slate-500 group-hover:text-slate-300',
                         ].join(' ')}
                       >
                         {link.icon}
+                        {isCollapsed && link.badge && (
+                          <span className={`absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full ${link.badgeColor === 'bg-amber-500' ? 'bg-accent' : 'bg-primary'} text-[8px] font-bold text-white flex items-center justify-center border-2 border-[#0B1120]`}>
+                            {link.badge !== 'Live' ? link.badge : ''}
+                          </span>
+                        )}
                       </span>
 
-                      <span className="flex-1 text-left">{link.label}</span>
+                      <div className={`flex items-center overflow-hidden transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0 flex-none' : 'flex-1 opacity-100 gap-3.5 min-w-0'}`}>
+                        <span className="flex-1 text-left whitespace-nowrap truncate">{link.label}</span>
 
-                      {link.badge ? (
-                        <span
-                          className={`${link.badgeColor ?? 'bg-slate-600'} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center leading-none`}
-                        >
-                          {link.badge}
-                        </span>
-                      ) : (
-                        <ChevronRight
-                          size={13}
-                          className={[
-                            'transition-all duration-150',
-                            isActive
-                              ? 'text-slate-400 dark:text-slate-500 opacity-100'
-                              : 'text-slate-600 dark:text-slate-400 opacity-0 group-hover:opacity-100',
-                          ].join(' ')}
-                        />
-                      )}
+                        {link.badge ? (
+                          <span
+                            className={`${
+                              link.badgeColor === 'bg-amber-500' ? 'bg-accent' : 
+                              link.badgeColor === 'bg-blue-500' ? 'bg-primary' : 
+                              link.badgeColor ?? 'bg-slate-600'
+                            } text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center leading-none flex-shrink-0`}
+                          >
+                            {link.badge}
+                          </span>
+                        ) : (
+                          <ChevronRight
+                            size={14}
+                            className={[
+                              'transition-all duration-300 flex-shrink-0',
+                              isActive
+                                ? 'text-primary opacity-100'
+                                : 'text-slate-600 opacity-0 group-hover:opacity-100 group-hover:translate-x-1',
+                            ].join(' ')}
+                          />
+                        )}
+                      </div>
                     </button>
                   </li>
                 )
@@ -278,39 +318,39 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
           </div>
         ))}
 
-        <div className="mt-6 mx-1 rounded-xl border border-white/8 bg-white/3 p-4">
-          <p className="text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest font-semibold mb-3">
+        <div className={`transition-all duration-300 overflow-hidden mx-2 rounded-xl border border-white/5 bg-white/[0.02] ${isCollapsed ? 'max-h-0 p-0 opacity-0 border-transparent mt-0' : 'max-h-64 p-4 opacity-100 mt-8'}`}>
+          <p className="text-slate-500 text-[10px] uppercase tracking-widest font-bold mb-3 whitespace-nowrap truncate">
             Fleet Status
           </p>
-          <div className="space-y-2.5">
+          <div className="space-y-3 font-mono text-[11px]">
             {[
-              { label: 'Active Trucks', value: String(fleetStats.active), color: 'bg-blue-400' },
+              { label: 'Active Trucks', value: String(fleetStats.active), color: 'bg-primary' },
               { label: 'In Transit', value: String(fleetStats.inTransit), color: 'bg-emerald-400' },
-              { label: 'Pier Standby', value: String(fleetStats.pierStandby), color: 'bg-amber-400' },
-              { label: 'Maintenance', value: String(fleetStats.maintenance), color: 'bg-slate-400' },
+              { label: 'Pier Standby', value: String(fleetStats.pierStandby), color: 'bg-accent' },
+              { label: 'Maintenance', value: String(fleetStats.maintenance), color: 'bg-slate-500' },
             ].map((stat) => (
               <div key={stat.label} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <span className={`w-1.5 h-1.5 rounded-full ${stat.color}`} />
-                  <span className="text-slate-400 dark:text-slate-500 text-xs">{stat.label}</span>
+                  <span className="text-slate-400">{stat.label}</span>
                 </div>
-                <span className="text-slate-200 text-xs font-semibold">{stat.value}</span>
+                <span className="text-slate-200 font-medium">{stat.value}</span>
               </div>
             ))}
           </div>
-          <div className="mt-3 h-1.5 rounded-full bg-white/6 overflow-hidden">
+          <div className="mt-4 h-1.5 rounded-full bg-white/5 overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-blue-500"
+              className="h-full rounded-full bg-primary"
               style={{ width: fleetStats.total > 0 ? `${Math.round(((fleetStats.active + fleetStats.inTransit + fleetStats.pierStandby) / fleetStats.total) * 100)}%` : '0%' }}
             />
           </div>
-          <p className="text-slate-500 dark:text-slate-400 text-[10px] mt-1.5">
+          <p className="text-slate-500 text-[10px] mt-2 font-medium">
             {fleetStats.total > 0 ? `${Math.round(((fleetStats.active + fleetStats.inTransit + fleetStats.pierStandby) / fleetStats.total) * 100)}% utilisation` : 'No fleet data'}
           </p>
         </div>
       </nav>
 
-      <div className="px-3 py-4 border-t border-white/8 space-y-0.5">
+      <div className={`py-5 border-t border-white/5 space-y-1 bg-[#0B1120]/50 backdrop-blur-md lg:rounded-b-3xl transition-all duration-300 ${isCollapsed ? 'px-2' : 'px-4'}`}>
         {[
           ...(userRole !== 'Maintenance' ? [{ id: 'inventory' as NavItem, icon: <Package2 size={16} strokeWidth={1.8} />, label: 'Cargo Inventory' }] : []),
           ...(userRole === 'Superadmin' ? [{ id: 'settings' as NavItem, icon: <Settings size={16} strokeWidth={1.8} />, label: 'Settings' }] : []),
@@ -322,35 +362,43 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
               key={item.label}
               onClick={() => { setActiveNav(item.id); onClose() }}
               className={[
-                'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150',
+                'w-full flex items-center py-2.5 rounded-full text-[13px] transition-all duration-300 cursor-pointer relative',
+                isCollapsed ? 'justify-center px-0' : 'gap-3.5 px-3',
                 isActive
-                  ? 'bg-white/10 text-white font-medium'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-200 hover:bg-white/5 font-medium'
+                  ? 'bg-primary/10 text-primary font-semibold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5 font-medium'
               ].join(' ')}
+              title={isCollapsed ? item.label : undefined}
             >
-              <span className={isActive ? 'text-blue-400' : ''}>{item.icon}</span>
-              <span>{item.label}</span>
+              {isActive && (
+                <span className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-l-full shadow-[-4px_0_12px_var(--color-primary)] transition-all duration-300" />
+              )}
+              <span className={isActive ? 'text-primary flex-shrink-0' : 'text-slate-500 flex-shrink-0'}>{item.icon}</span>
+              <span className={`whitespace-nowrap overflow-hidden truncate transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0 flex-none' : 'flex-1 opacity-100 text-left'}`}>{item.label}</span>
             </button>
           )
         })}
 
         <div 
           onClick={() => { setActiveNav('profile'); onClose() }}
-          className="mt-3 flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 cursor-pointer group transition-all duration-150"
+          className={`mt-4 flex items-center rounded-full hover:bg-white/5 cursor-pointer group transition-all duration-300 border border-transparent hover:border-white/5 ${isCollapsed ? 'justify-center px-0 py-3' : 'gap-3 px-3 py-3'}`}
+          title={isCollapsed ? "Profile" : undefined}
         >
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">
+          <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0 text-white text-[13px] font-bold shadow-md shadow-primary/20">
             {initial}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-slate-200 text-xs font-semibold truncate">{user?.email || 'Unknown User'}</p>
-            <p className="text-slate-500 dark:text-slate-400 text-[10px] truncate">{userRole}</p>
+          <div className={`transition-all duration-300 whitespace-nowrap overflow-hidden ${isCollapsed ? 'w-0 opacity-0 flex-none' : 'flex-1 min-w-0 opacity-100'}`}>
+            <p className="text-slate-200 text-xs font-semibold truncate group-hover:text-white transition-colors">{user?.email || 'Unknown User'}</p>
+            <p className="text-slate-500 text-[10px] truncate group-hover:text-slate-400 transition-colors">{userRole}</p>
           </div>
-          <button 
-            onClick={(e) => { e.stopPropagation(); signOut(); }}
-            className="p-1.5 rounded-lg hover:bg-red-500/10 text-slate-600 dark:text-slate-400 hover:text-red-400 transition-colors"
-          >
-            <LogOut size={14} className="flex-shrink-0" />
-          </button>
+          {!isCollapsed && (
+             <button 
+               onClick={(e) => { e.stopPropagation(); signOut(); }}
+               className="p-2 rounded-lg hover:bg-destructive/10 text-slate-500 hover:text-destructive transition-colors duration-200 cursor-pointer"
+             >
+               <LogOut size={16} className="flex-shrink-0" />
+             </button>
+          )}
         </div>
       </div>
     </aside>
