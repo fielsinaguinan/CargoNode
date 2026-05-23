@@ -13,9 +13,9 @@ interface KPICardProps {
 
 const KPICard: React.FC<KPICardProps> = ({ label, value, sub, trend, icon, iconBg }) => {
   return (
-    <div className="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 card-hover overflow-hidden">
+    <div className="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 card-hover overflow-hidden transition-colors duration-300">
       {/* Subtle top gradient line */}
-      <div className="absolute top-0 left-5 right-5 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+      <div className="absolute top-0 left-5 right-5 h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-700 to-transparent" />
 
       <div className="flex items-start justify-between">
         {/* Icon */}
@@ -27,8 +27,8 @@ const KPICard: React.FC<KPICardProps> = ({ label, value, sub, trend, icon, iconB
           className={[
             'flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full',
             trend === 'up'
-              ? 'text-emerald-700 bg-emerald-50'
-              : 'text-red-600 bg-red-50',
+              ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10'
+              : 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10',
           ].join(' ')}
         >
           {trend === 'up'

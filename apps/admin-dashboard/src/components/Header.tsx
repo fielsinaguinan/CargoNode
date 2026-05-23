@@ -119,7 +119,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, onNavigate }) => {
   }, [])
 
   return (
-    <header className="sticky top-0 z-10 flex items-center gap-4 px-6 h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
+    <header className="sticky top-0 z-10 flex items-center gap-4 px-6 h-16 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 flex-shrink-0 transition-colors duration-300">
       {/* Hamburger — mobile */}
       <button
         onClick={onMenuClick}
@@ -150,7 +150,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, onNavigate }) => {
           >
             <Bell size={18} />
             {unread > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500 animate-pulse-dot border border-white" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500 animate-pulse-dot border border-white dark:border-slate-900" />
             )}
           </button>
 
@@ -176,7 +176,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, onNavigate }) => {
                     onClick={() => markAsRead(n.id)}
                     className={[
                       'flex gap-3 px-5 py-3.5 cursor-pointer transition-colors duration-100',
-                      n.is_read ? 'hover:bg-slate-50 dark:hover:bg-slate-800' : 'bg-amber-50/40 hover:bg-amber-50/70',
+                      n.is_read ? 'hover:bg-slate-50 dark:hover:bg-slate-800' : 'bg-amber-50/40 dark:bg-amber-500/5 hover:bg-amber-50/70 dark:hover:bg-amber-500/10',
                     ].join(' ')}
                   >
                     <div className="mt-0.5 w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
@@ -233,7 +233,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, onNavigate }) => {
           {/* Profile dropdown */}
           {profileOpen && (
             <div className="absolute right-0 top-[calc(100%+8px)] w-60 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl shadow-slate-900/8 animate-fade-in-down overflow-hidden z-50">
-              <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-br from-slate-50 to-white">
+              <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-900">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white text-sm font-bold shadow">
                     {initial}
@@ -266,7 +266,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, onNavigate }) => {
               <div className="py-1.5 border-t border-slate-100 dark:border-slate-800">
                 <button 
                   onClick={() => signOut()}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors duration-100"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors duration-100"
                 >
                   <LogOut size={14} />
                   Sign Out

@@ -33,9 +33,9 @@ interface PrimeMover {
 }
 
 const statusCfg = {
-  ok:          { label: 'Good',       color: 'text-emerald-700 bg-emerald-50 border-emerald-200', icon: <CheckCircle2 size={13} /> },
-  due:         { label: 'Service Due', color: 'text-amber-700 bg-amber-50 border-amber-200',     icon: <AlertTriangle size={13} /> },
-  'in-service': { label: 'In Service', color: 'text-slate-700 bg-slate-100 border-slate-300',  icon: <Wrench size={13} /> },
+  ok:          { label: 'Good',       color: 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20', icon: <CheckCircle2 size={13} /> },
+  due:         { label: 'Service Due', color: 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20',     icon: <AlertTriangle size={13} /> },
+  'in-service': { label: 'In Service', color: 'text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600',  icon: <Wrench size={13} /> },
 }
 
 const Maintenance: React.FC = () => {
@@ -122,7 +122,7 @@ const Maintenance: React.FC = () => {
         actions={
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-200 transition-all duration-150"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-200 dark:shadow-blue-900/30 transition-all duration-150"
           >
             <Plus size={15} />
             Schedule Service
@@ -134,9 +134,9 @@ const Maintenance: React.FC = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Total Fleet', value: primeMovers.length.toString(), icon: <Truck size={16} />, bg: 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400' },
-          { label: 'Service Due', value: primeMovers.filter(v => getMappedStatus(v) === 'due').length.toString(), icon: <AlertTriangle size={16} />, bg: 'bg-amber-50 text-amber-600' },
-          { label: 'In Service', value: primeMovers.filter(v => getMappedStatus(v) === 'in-service').length.toString(), icon: <Wrench size={16} />, bg: 'bg-slate-100 text-slate-700' },
-          { label: 'Healthy', value: primeMovers.filter(v => getMappedStatus(v) === 'ok').length.toString(), icon: <CheckCircle2 size={16} />, bg: 'bg-emerald-50 text-emerald-600' },
+          { label: 'Service Due', value: primeMovers.filter(v => getMappedStatus(v) === 'due').length.toString(), icon: <AlertTriangle size={16} />, bg: 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400' },
+          { label: 'In Service', value: primeMovers.filter(v => getMappedStatus(v) === 'in-service').length.toString(), icon: <Wrench size={16} />, bg: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300' },
+          { label: 'Healthy', value: primeMovers.filter(v => getMappedStatus(v) === 'ok').length.toString(), icon: <CheckCircle2 size={16} />, bg: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' },
         ].map((s) => (
           <div key={s.label} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm px-5 py-4 card-hover flex items-center gap-4">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${s.bg}`}>
@@ -214,7 +214,7 @@ const Maintenance: React.FC = () => {
               </div>
 
               {/* Card footer */}
-              <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 flex items-center justify-between">
+              <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between">
                 <span className="text-[11px] text-slate-400 dark:text-slate-500">DB Status: {v.status}</span>
                 <button className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors">
                   View History
@@ -291,7 +291,7 @@ const Maintenance: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-200 transition-all disabled:opacity-70"
+                  className="flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-200 dark:shadow-blue-900/30 transition-all disabled:opacity-70"
                 >
                   {isSubmitting ? 'Saving...' : 'Confirm Schedule'}
                 </button>

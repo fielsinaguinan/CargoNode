@@ -121,7 +121,7 @@ const CargoWaybillAllocator: React.FC = () => {
         
         {/* Left Pane: The Form */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col h-[600px]">
-          <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50">
+          <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
             <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 tracking-tight">Allocation Details</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Fill in the dispatch manifest to generate a digital waybill</p>
           </div>
@@ -224,7 +224,7 @@ const CargoWaybillAllocator: React.FC = () => {
                   {items.map((item, idx) => (
                     <div key={item.id} className="flex items-center justify-between bg-white dark:bg-slate-900 px-4 py-3 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm animate-fade-in-down" style={{ animationDelay: `${idx * 50}ms` }}>
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                        <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400">
                           <Package size={16} />
                         </div>
                         <div>
@@ -235,7 +235,7 @@ const CargoWaybillAllocator: React.FC = () => {
                       <button 
                         type="button"
                         onClick={() => handleRemoveItem(item.id)}
-                        className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                        className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-md transition-colors"
                       >
                         <X size={16} />
                       </button>

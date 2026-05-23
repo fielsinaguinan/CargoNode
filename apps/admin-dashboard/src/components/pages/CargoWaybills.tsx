@@ -32,10 +32,10 @@ interface Waybill {
 }
 
 const statusCfg = {
-  Delivered:   { label: 'Delivered',   color: 'text-emerald-700 bg-emerald-50 border-emerald-200', icon: <CheckCircle2 size={12} /> },
-  'In Transit': { label: 'In Transit', color: 'text-blue-700 bg-blue-50 border-blue-200',           icon: <Clock size={12} /> },
-  Loading:     { label: 'Loading',     color: 'text-slate-700 bg-slate-100 border-slate-300',        icon: <Package size={12} /> },
-  Delayed:     { label: 'Delayed',     color: 'text-red-700 bg-red-50 border-red-200',               icon: <AlertTriangle size={12} /> },
+  Delivered:   { label: 'Delivered',   color: 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20', icon: <CheckCircle2 size={12} /> },
+  'In Transit': { label: 'In Transit', color: 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20',           icon: <Clock size={12} /> },
+  Loading:     { label: 'Loading',     color: 'text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600',        icon: <Package size={12} /> },
+  Delayed:     { label: 'Delayed',     color: 'text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20',               icon: <AlertTriangle size={12} /> },
 }
 
 interface CargoWaybillsProps {
@@ -136,7 +136,7 @@ const CargoWaybills: React.FC<CargoWaybillsProps> = ({ setActiveNav }) => {
             </button>
             <button 
               onClick={() => setActiveNav?.('allocator')}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-200 transition-all duration-150"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-200 dark:shadow-blue-900/30 transition-all duration-150"
             >
               <Plus size={15} />
               New Waybill
@@ -149,9 +149,9 @@ const CargoWaybills: React.FC<CargoWaybillsProps> = ({ setActiveNav }) => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Total Waybills', value: waybills.length.toString(), sub: 'All records', color: 'text-slate-800 dark:text-slate-200' },
-          { label: 'In Transit', value: waybills.filter(w => w.status === 'In Transit').length.toString(), sub: 'Active shipments', color: 'text-blue-700' },
-          { label: 'Delivered', value: waybills.filter(w => w.status === 'Delivered').length.toString(), sub: 'Completed', color: 'text-emerald-700' },
-          { label: 'Loading', value: waybills.filter(w => w.status === 'Loading').length.toString(), sub: 'Pending dispatch', color: 'text-violet-700' },
+          { label: 'In Transit', value: waybills.filter(w => w.status === 'In Transit').length.toString(), sub: 'Active shipments', color: 'text-blue-700 dark:text-blue-400' },
+          { label: 'Delivered', value: waybills.filter(w => w.status === 'Delivered').length.toString(), sub: 'Completed', color: 'text-emerald-700 dark:text-emerald-400' },
+          { label: 'Loading', value: waybills.filter(w => w.status === 'Loading').length.toString(), sub: 'Pending dispatch', color: 'text-violet-700 dark:text-violet-400' },
         ].map((s) => (
           <div key={s.label} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm px-5 py-4 card-hover">
             <p className={`text-xl font-bold tracking-tight ${s.color} font-[Plus_Jakarta_Sans,sans-serif]`}>{s.value}</p>
@@ -217,7 +217,7 @@ const CargoWaybills: React.FC<CargoWaybillsProps> = ({ setActiveNav }) => {
                     key={w.tracking_number}
                     className={[
                       'transition-colors duration-100 group',
-                      isSelected ? 'bg-blue-50/50' : 'hover:bg-slate-50/60 dark:hover:bg-slate-800/50',
+                      isSelected ? 'bg-blue-50/50 dark:bg-blue-500/5' : 'hover:bg-slate-50/60 dark:hover:bg-slate-800/50',
                     ].join(' ')}
                   >
                     <td className="px-6 py-3.5">
@@ -297,7 +297,7 @@ const CargoWaybills: React.FC<CargoWaybillsProps> = ({ setActiveNav }) => {
           </table>
         </div>
 
-        <div className="flex items-center justify-between px-6 py-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50">
+        <div className="flex items-center justify-between px-6 py-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
           <p className="text-xs text-slate-400 dark:text-slate-500">Showing {filtered.length} of {waybills.length} waybills</p>
           <div className="flex items-center gap-1">
             {[1, 2, 3].map((p) => (

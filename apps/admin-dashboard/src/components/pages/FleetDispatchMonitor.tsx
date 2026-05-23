@@ -484,13 +484,13 @@ const FleetDispatchMonitor: React.FC<FleetDispatchMonitorProps> = ({ setActiveNa
                     <td className="px-4 py-3.5 text-right whitespace-nowrap">
                       <button 
                         onClick={() => setActiveNav?.('waybills')}
-                        className="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-700 hover:bg-slate-200 transition-colors opacity-0 group-hover:opacity-100"
+                        className="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors opacity-0 group-hover:opacity-100"
                       >
                         <MoreHorizontal size={15} />
                       </button>
                       <button 
                         onClick={() => setActiveNav?.('waybills')}
-                        className="ml-1 p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors opacity-0 group-hover:opacity-100"
+                        className="ml-1 p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors opacity-0 group-hover:opacity-100"
                       >
                         <ChevronRight size={15} />
                       </button>

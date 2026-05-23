@@ -26,7 +26,7 @@ const AccessDenied = () => (
     <div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center mb-4">
       <ShieldAlert size={32} className="text-red-500" />
     </div>
-    <h2 className="text-xl font-bold text-slate-200 mb-2">Access Denied</h2>
+    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">Access Denied</h2>
     <p className="text-sm">You do not have permission to view this module.</p>
   </div>
 )

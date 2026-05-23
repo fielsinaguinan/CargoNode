@@ -38,6 +38,8 @@ body {
   margin: 0;
   background-color: #f8fafc;
   color: #0f172a;
+  transition: background-color 400ms cubic-bezier(0.4, 0, 0.2, 1),
+              color 400ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 html.dark body {
@@ -45,7 +47,7 @@ html.dark body {
   color: #f8fafc; /* slate-50 */
 }
 
-/* Scrollbar styling */
+/* ─── Scrollbar styling ─── */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
@@ -61,6 +63,13 @@ html.dark body {
   background: #94a3b8;
 }
 
+html.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
 /* Sidebar scrollbar override */
 .sidebar-scroll::-webkit-scrollbar-thumb {
   background: rgba(255,255,255,0.08);
@@ -69,7 +78,7 @@ html.dark body {
   background: rgba(255,255,255,0.14);
 }
 
-/* Smooth global transitions */
+/* ─── Smooth global transitions ─── */
 a, button {
   transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -81,6 +90,8 @@ a, button {
     transition: margin-left 300ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
+
+/* ─── Animations ─── */
 
 /* Pulsating dot animation */
 @keyframes pulse-dot {
@@ -112,7 +123,7 @@ a, button {
   animation: slide-in-left 220ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-/* Card shimmer hover */
+/* ─── Card hover ─── */
 .card-hover {
   transition: box-shadow 200ms ease, transform 200ms ease;
 }
@@ -121,7 +132,12 @@ a, button {
   transform: translateY(-1px);
 }
 
-/* Gradient text utility */
+html.dark .card-hover:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35),
+              0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+/* ─── Gradient text utility ─── */
 .gradient-text {
   background: linear-gradient(135deg, #60a5fa 0%, #818cf8 100%);
   -webkit-background-clip: text;
@@ -129,7 +145,7 @@ a, button {
   background-clip: text;
 }
 
-/* KPI card accent bar */
+/* ─── KPI card accent bar ─── */
 .accent-bar::before {
   content: '';
   position: absolute;
@@ -147,4 +163,3 @@ a, button {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
-

@@ -15,9 +15,9 @@ interface YardContainer {
 }
 
 const statusCfg = {
-  Loading:   { label: 'Manifested / Loading', color: 'text-blue-700 bg-blue-50 border-blue-200', dot: 'bg-blue-500' },
-  Delayed:   { label: 'Delayed in Yard',      color: 'text-amber-700 bg-amber-50 border-amber-200', dot: 'bg-amber-500' },
-  Delivered: { label: 'Delivered / Staged',   color: 'text-emerald-700 bg-emerald-50 border-emerald-200', dot: 'bg-emerald-500' },
+  Loading:   { label: 'Manifested / Loading', color: 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20', dot: 'bg-blue-500' },
+  Delayed:   { label: 'Delayed in Yard',      color: 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20', dot: 'bg-amber-500' },
+  Delivered: { label: 'Delivered / Staged',   color: 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20', dot: 'bg-emerald-500' },
 }
 
 interface Props {

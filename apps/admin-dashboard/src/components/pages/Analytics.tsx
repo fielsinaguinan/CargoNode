@@ -98,7 +98,7 @@ const Analytics: React.FC = () => {
       data: [1.2, 1.5, 1.1, 1.8, 1.6, 2.1, 1.9, 2.4],
       color: '#3b82f6',
       icon: <DollarSign size={16} />,
-      iconBg: 'bg-blue-50 text-blue-600',
+      iconBg: 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400',
     },
     {
       label: 'Total Fuel Costs',
@@ -109,7 +109,7 @@ const Analytics: React.FC = () => {
       data: [0.38, 0.41, 0.36, 0.45, 0.42, 0.48, 0.44, 0.52],
       color: '#f59e0b',
       icon: <Activity size={16} />,
-      iconBg: 'bg-amber-50 text-amber-600',
+      iconBg: 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400',
     },
     {
       label: 'Net Profit Estimate',
@@ -120,7 +120,7 @@ const Analytics: React.FC = () => {
       data: [82, 91, 78, 108, 95, 114, 103, 128],
       color: '#10b981',
       icon: <TrendingUp size={16} />,
-      iconBg: 'bg-emerald-50 text-emerald-600',
+      iconBg: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
     },
     {
       label: 'Deliveries Completed',
@@ -131,7 +131,7 @@ const Analytics: React.FC = () => {
       data: [88, 91, 85, 93, 90, 94, 92, 96],
       color: '#8b5cf6',
       icon: <Package size={16} />,
-      iconBg: 'bg-violet-50 text-violet-600',
+      iconBg: 'bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400',
     },
   ]
 
@@ -227,7 +227,7 @@ const Analytics: React.FC = () => {
               </div>
               <div className={[
                 'flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full',
-                k.up ? 'text-emerald-700 bg-emerald-50' : 'text-red-600 bg-red-50',
+                k.up ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10' : 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10',
               ].join(' ')}>
                 {k.up ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />}
                 {k.change}
@@ -374,7 +374,7 @@ const Analytics: React.FC = () => {
           </div>
           <div className="divide-y divide-slate-50 dark:divide-slate-800/50">
             {displayRoutes.map((r, i) => (
-              <div key={r.route} className="px-6 py-3.5 hover:bg-slate-50/60 transition-colors">
+              <div key={r.route} className="px-6 py-3.5 hover:bg-slate-50/60 dark:hover:bg-slate-800/50 transition-colors">
                 <div className="flex items-center gap-3">
                   <span className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold flex items-center justify-center flex-shrink-0">
                     {i + 1}
@@ -398,7 +398,7 @@ const Analytics: React.FC = () => {
               </div>
             ))}
           </div>
-          <div className="px-6 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50">
+          <div className="px-6 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
             <button className="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors">
               View all routes <ArrowUpRight size={11} />
             </button>
@@ -412,7 +412,7 @@ const Analytics: React.FC = () => {
               <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Revenue Trend</h3>
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Weekly revenue in ₱M</p>
             </div>
-            <div className="flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
+            <div className="flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 rounded-full">
               <TrendingUp size={12} />
               +18.2%
             </div>

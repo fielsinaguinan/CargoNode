@@ -31,10 +31,10 @@ interface Dispatch {
 }
 
 const statusConfig = {
-  'In Transit': { label: 'In Transit', color: 'text-blue-700 bg-blue-50 border-blue-200', dot: 'bg-blue-500' },
-  Loading:      { label: 'Loading',    color: 'text-amber-700 bg-amber-50 border-amber-200', dot: 'bg-amber-500' },
-  Delayed:      { label: 'Delayed',    color: 'text-red-700 bg-red-50 border-red-200', dot: 'bg-red-500' },
-  Delivered:    { label: 'Delivered',  color: 'text-emerald-700 bg-emerald-50 border-emerald-200', dot: 'bg-emerald-500' },
+  'In Transit': { label: 'In Transit', color: 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20', dot: 'bg-blue-500' },
+  Loading:      { label: 'Loading',    color: 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20', dot: 'bg-amber-500' },
+  Delayed:      { label: 'Delayed',    color: 'text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20', dot: 'bg-red-500' },
+  Delivered:    { label: 'Delivered',  color: 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20', dot: 'bg-emerald-500' },
 }
 
 import type { NavItem } from '../../App'
@@ -95,10 +95,10 @@ const DispatchBoard: React.FC<DispatchBoardProps> = ({ setActiveNav }) => {
   const totalContainers = waybills.length
 
   const kpis = [
-    { label: 'Active Dispatches', value: activeDispatches.toString(), sub: 'Currently assigned', trend: 'up' as const, icon: <Truck size={18} />, accent: 'from-blue-500 to-indigo-500', iconBg: 'bg-blue-50 text-blue-600' },
-    { label: 'Deliveries Today', value: deliveriesToday.toString(), sub: 'Since 12:00 AM', trend: 'up' as const, icon: <CheckCircle2 size={18} />, accent: 'from-emerald-500 to-teal-500', iconBg: 'bg-emerald-50 text-emerald-600' },
-    { label: 'Active Alerts', value: activeAlerts.toString(), sub: 'Requires action', trend: 'down' as const, icon: <AlertTriangle size={18} />, accent: 'from-amber-500 to-orange-500', iconBg: 'bg-amber-50 text-amber-600' },
-    { label: 'Total Containers', value: totalContainers.toString(), sub: 'All recorded containers', trend: 'up' as const, icon: <Package size={18} />, accent: 'from-violet-500 to-purple-500', iconBg: 'bg-violet-50 text-violet-600' },
+    { label: 'Active Dispatches', value: activeDispatches.toString(), sub: 'Currently assigned', trend: 'up' as const, icon: <Truck size={18} />, accent: 'from-blue-500 to-indigo-500', iconBg: 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400' },
+    { label: 'Deliveries Today', value: deliveriesToday.toString(), sub: 'Since 12:00 AM', trend: 'up' as const, icon: <CheckCircle2 size={18} />, accent: 'from-emerald-500 to-teal-500', iconBg: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' },
+    { label: 'Active Alerts', value: activeAlerts.toString(), sub: 'Requires action', trend: 'down' as const, icon: <AlertTriangle size={18} />, accent: 'from-amber-500 to-orange-500', iconBg: 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400' },
+    { label: 'Total Containers', value: totalContainers.toString(), sub: 'All recorded containers', trend: 'up' as const, icon: <Package size={18} />, accent: 'from-violet-500 to-purple-500', iconBg: 'bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400' },
   ]
 
   return (
@@ -258,7 +258,7 @@ const DispatchBoard: React.FC<DispatchBoardProps> = ({ setActiveNav }) => {
         </div>
 
         {/* Table footer */}
-        <div className="flex items-center justify-between px-6 py-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50">
+        <div className="flex items-center justify-between px-6 py-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
           <p className="text-xs text-slate-400 dark:text-slate-500">Showing {filtered.length} of {waybills.length} records</p>
           <button 
             onClick={() => setActiveNav?.('waybills')}
