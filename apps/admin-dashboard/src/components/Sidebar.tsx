@@ -112,7 +112,14 @@ const getNavGroups = (activeWaybills: number, delayedWaybills: number, pendingBo
     },
   ]
 
-  if (role !== 'Superadmin') {
+  if (role === 'Maintenance') {
+    // Only show Fleet group, filter out analytics
+    return allGroups
+      .filter(g => g.groupLabel === 'Fleet')
+      .map(g => ({ ...g, links: g.links.filter(l => l.id !== 'analytics') }))
+  }
+
+  if (role === 'Dispatcher') {
     // Filter out Administration group
     const filteredGroups = allGroups.filter(g => g.groupLabel !== 'Administration')
     // Filter out Analytics from Fleet group
@@ -305,7 +312,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
 
       <div className="px-3 py-4 border-t border-white/8 space-y-0.5">
         {[
-          { id: 'inventory' as NavItem, icon: <Package2 size={16} strokeWidth={1.8} />, label: 'Cargo Inventory' },
+          ...(userRole !== 'Maintenance' ? [{ id: 'inventory' as NavItem, icon: <Package2 size={16} strokeWidth={1.8} />, label: 'Cargo Inventory' }] : []),
           ...(userRole === 'Superadmin' ? [{ id: 'settings' as NavItem, icon: <Settings size={16} strokeWidth={1.8} />, label: 'Settings' }] : []),
           { id: 'help' as NavItem, icon: <HelpCircle size={16} strokeWidth={1.8} />, label: 'Help & Support' },
         ].map((item) => {

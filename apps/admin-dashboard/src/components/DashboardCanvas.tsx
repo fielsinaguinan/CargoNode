@@ -36,8 +36,18 @@ const DashboardCanvas: React.FC<DashboardCanvasProps> = ({ activeNav, setActiveN
 
   const renderPage = () => {
     // RBAC Guardrail
-    const restrictedModules = ['analytics', 'driver-roster', 'fleet-registry', 'settings']
-    if (restrictedModules.includes(activeNav) && userRole !== 'Superadmin') {
+    const adminRestrictedModules = ['analytics', 'driver-roster', 'fleet-registry', 'settings']
+    const opsRestrictedModules = ['dispatch', 'waybills', 'allocator', 'bookings', 'inventory']
+    
+    let isRestricted = false
+
+    if (userRole === 'Maintenance') {
+      isRestricted = adminRestrictedModules.includes(activeNav) || opsRestrictedModules.includes(activeNav)
+    } else if (userRole === 'Dispatcher') {
+      isRestricted = adminRestrictedModules.includes(activeNav)
+    }
+
+    if (isRestricted) {
       return <AccessDenied />
     }
 

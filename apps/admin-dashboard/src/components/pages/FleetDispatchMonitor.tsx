@@ -18,6 +18,28 @@ import {
 import PageHeader from '../PageHeader'
 import { supabase } from '../../lib/supabase'
 import SystemDiagnosticsPanel from '../SystemDiagnosticsPanel'
+import { useAuth } from '../../contexts/AuthContext'
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
+import L from 'leaflet'
+
+// Fix Leaflet's default icon path issues
+delete (L.Icon.Default.prototype as any)._getIconUrl
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+})
+
+// Generate consistent coordinates for movers around Manila Port
+const manilaCoords: [number, number] = [14.5995, 120.9842]
+const getCoordForMover = (id: string): [number, number] => {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash)
+  const latOffset = ((hash % 100) / 100 - 0.5) * 0.1
+  const lngOffset = (((hash >> 2) % 100) / 100 - 0.5) * 0.1
+  return [manilaCoords[0] + latOffset, manilaCoords[1] + lngOffset]
+}
 
 // Mapping themes for KPIs
 const themeMap: Record<string, { bg: string, text: string, borderTop: string }> = {
@@ -47,6 +69,7 @@ interface FleetDispatchMonitorProps {
 }
 
 const FleetDispatchMonitor: React.FC<FleetDispatchMonitorProps> = ({ setActiveNav }) => {
+  const { userRole } = useAuth()
   const [movers, setMovers] = useState<any[]>([])
   const [waybills, setWaybills] = useState<any[]>([])
   const [alerts, setAlerts] = useState<any[]>([])
@@ -99,7 +122,7 @@ const FleetDispatchMonitor: React.FC<FleetDispatchMonitorProps> = ({ setActiveNa
   
   const kpis = [
     { label: 'Active Prime Movers', value: activeMoversCount.toString(), sub: `Out of ${movers.length} total`, icon: <Truck size={18} />, colorTheme: 'emerald' },
-    { label: 'Containers in Transit', value: transitWaybillsCount.toString(), sub: 'Live tracking active', icon: <Package size={18} />, colorTheme: 'blue' },
+    ...(userRole !== 'Maintenance' ? [{ label: 'Containers in Transit', value: transitWaybillsCount.toString(), sub: 'Live tracking active', icon: <Package size={18} />, colorTheme: 'blue' }] : []),
     { label: 'Maintenance Alerts', value: alerts.length.toString(), sub: 'Requires attention', icon: <Wrench size={18} />, colorTheme: 'amber' },
     { label: 'Sync Status', value: 'Optimal', sub: 'Realtime active', icon: <Wifi size={18} />, colorTheme: 'violet' },
   ]
@@ -218,51 +241,48 @@ const FleetDispatchMonitor: React.FC<FleetDispatchMonitorProps> = ({ setActiveNa
       {/* Map & Live Availability Roster Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Map Section */}
-        <div className="lg:col-span-2 relative bg-slate-900 rounded-2xl border border-slate-800 shadow-lg overflow-hidden h-80 flex flex-col">
-          {/* Simulated Map Background */}
-          <div className="absolute inset-0 bg-[#0a192f] opacity-90"
-            style={{
-              backgroundImage: 'radial-gradient(#1e3a8a 1px, transparent 1px)',
-              backgroundSize: '30px 30px'
-            }}
-          />
-          {/* Decorative Map Elements */}
-          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 800 400" preserveAspectRatio="none">
-            <path d="M100,300 C250,250 350,100 500,150 C650,200 700,50 800,100" stroke="#3b82f6" strokeWidth="2" fill="none" strokeDasharray="4 4" opacity="0.4" />
-            <path d="M50,150 C200,200 400,50 600,250 C700,350 750,200 800,250" stroke="#10b981" strokeWidth="2" fill="none" strokeDasharray="4 4" opacity="0.4" />
-            {/* Markers */}
-            <circle cx="500" cy="150" r="6" fill="#3b82f6" className="animate-pulse" />
-            <circle cx="600" cy="250" r="6" fill="#10b981" className="animate-pulse" />
-            <circle cx="350" cy="100" r="6" fill="#f59e0b" className="animate-pulse" />
-          </svg>
+        <div className={`relative bg-slate-900 rounded-2xl border border-slate-800 shadow-lg overflow-hidden h-80 flex flex-col ${userRole === 'Maintenance' ? 'lg:col-span-3' : 'lg:col-span-2'}`}>
+          <MapContainer 
+            center={manilaCoords} 
+            zoom={11} 
+            className="w-full h-full z-0"
+            zoomControl={false}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            />
+            {movers.map(mover => (
+              <Marker key={mover.id} position={getCoordForMover(mover.id)}>
+                <Popup>
+                  <div className="text-xs">
+                    <p className="font-bold text-slate-800 mb-1">{mover.id}</p>
+                    <p className="text-slate-500 mb-1">Status: <span className="font-semibold">{mover.status}</span></p>
+                    <p className="text-slate-500">Location: {mover.current_location || 'Terminal'}</p>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
 
           {/* Glassmorphism Overlay Top Left */}
-          <div className="absolute top-4 left-4">
-             <div className="bg-slate-900/40 backdrop-blur-md border border-white/10 rounded-xl p-3 shadow-2xl flex items-center gap-3">
+          <div className="absolute top-4 left-4 z-10 pointer-events-none">
+             <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-xl p-3 shadow-xl flex items-center gap-3">
                <div className="relative flex h-3 w-3">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                </div>
                <div>
-                 <p className="text-white text-xs font-semibold tracking-wide">Live GPS Tracking</p>
-                 <p className="text-slate-400 dark:text-slate-500 text-[10px]">GPS Interval: 30s</p>
+                 <p className="text-slate-900 dark:text-white text-xs font-semibold tracking-wide">Live GPS Tracking</p>
+                 <p className="text-slate-500 dark:text-slate-400 text-[10px]">Active Monitors: {activeMoversCount}</p>
                </div>
              </div>
-          </div>
-          
-          {/* Radar Sweep Effect (decorative) */}
-          <div className="absolute top-1/2 left-1/2 w-96 h-96 -ml-48 -mt-48 rounded-full border border-blue-500/20 shadow-[inset_0_0_50px_rgba(59,130,246,0.1)] pointer-events-none"></div>
-
-          {/* Center Title overlay */}
-          <div className="relative z-10 m-auto text-center pointer-events-none">
-            <Navigation size={32} className="text-blue-400 mx-auto mb-3 opacity-80" />
-            <h3 className="text-white font-bold tracking-widest uppercase text-sm">Central Dispatch Sector</h3>
-            <p className="text-slate-400 dark:text-slate-500 text-xs mt-1">Monitoring {activeMoversCount} active coordinates</p>
           </div>
         </div>
 
         {/* Live Availability Roster & Pairing Interface */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col h-80">
+        {userRole !== 'Maintenance' && (
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col h-80">
           <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
             <div className="flex items-center justify-between mb-3">
               <div>
@@ -391,6 +411,7 @@ const FleetDispatchMonitor: React.FC<FleetDispatchMonitorProps> = ({ setActiveNa
             )}
           </div>
         </div>
+        )}
       </div>
 
       {/* Dispatch Data Table */}
@@ -411,10 +432,10 @@ const FleetDispatchMonitor: React.FC<FleetDispatchMonitorProps> = ({ setActiveNa
             <thead>
               <tr className="text-left border-b border-slate-100 dark:border-slate-800 bg-slate-50/50">
                 <th className="px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">Prime Mover ID</th>
-                <th className="px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">Waybill / Container</th>
-                <th className="px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">Route Assignment</th>
+                {userRole !== 'Maintenance' && <th className="px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">Waybill / Container</th>}
+                {userRole !== 'Maintenance' && <th className="px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">Route Assignment</th>}
                 <th className="px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">Live Status</th>
-                <th className="px-4 py-3"></th>
+                {userRole !== 'Maintenance' && <th className="px-4 py-3"></th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
@@ -434,42 +455,48 @@ const FleetDispatchMonitor: React.FC<FleetDispatchMonitorProps> = ({ setActiveNa
                       <span className="font-mono text-xs font-bold text-slate-700 dark:text-slate-300">{row.prime_mover_id || 'Unassigned'}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-3.5 whitespace-nowrap">
-                     <div className="flex flex-col">
-                       <span className="font-mono text-[11px] font-bold text-blue-600">{row.tracking_number}</span>
-                       <div className="flex items-center gap-1.5 mt-0.5">
-                         <Package size={11} className="text-slate-400 dark:text-slate-500" />
-                         <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">{row.container_type}</span>
+                  {userRole !== 'Maintenance' && (
+                    <td className="px-6 py-3.5 whitespace-nowrap">
+                       <div className="flex flex-col">
+                         <span className="font-mono text-[11px] font-bold text-blue-600">{row.tracking_number}</span>
+                         <div className="flex items-center gap-1.5 mt-0.5">
+                           <Package size={11} className="text-slate-400 dark:text-slate-500" />
+                           <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">{row.container_type}</span>
+                         </div>
                        </div>
-                     </div>
-                  </td>
-                  <td className="px-6 py-3.5 whitespace-nowrap">
-                    <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
-                      <MapPin size={12} className="text-blue-500 opacity-70" />
-                      {row.origin} 
-                      <ArrowRight size={10} className="mx-1 text-slate-300" />
-                      {row.destination}
-                    </div>
-                  </td>
+                    </td>
+                  )}
+                  {userRole !== 'Maintenance' && (
+                    <td className="px-6 py-3.5 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
+                        <MapPin size={12} className="text-blue-500 opacity-70" />
+                        {row.origin} 
+                        <ArrowRight size={10} className="mx-1 text-slate-300" />
+                        {row.destination}
+                      </div>
+                    </td>
+                  )}
                   <td className="px-6 py-3.5 whitespace-nowrap">
                     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border ${statusStyles[row.status] || 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}>
                       {row.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                    <button 
-                      onClick={() => setActiveNav?.('waybills')}
-                      className="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-700 hover:bg-slate-200 transition-colors opacity-0 group-hover:opacity-100"
-                    >
-                      <MoreHorizontal size={15} />
-                    </button>
-                    <button 
-                      onClick={() => setActiveNav?.('waybills')}
-                      className="ml-1 p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors opacity-0 group-hover:opacity-100"
-                    >
-                      <ChevronRight size={15} />
-                    </button>
-                  </td>
+                  {userRole !== 'Maintenance' && (
+                    <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                      <button 
+                        onClick={() => setActiveNav?.('waybills')}
+                        className="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-700 hover:bg-slate-200 transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <MoreHorizontal size={15} />
+                      </button>
+                      <button 
+                        onClick={() => setActiveNav?.('waybills')}
+                        className="ml-1 p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <ChevronRight size={15} />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

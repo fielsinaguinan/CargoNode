@@ -18,7 +18,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [userRole, setUserRole] = useState<AdminRole>('Dispatcher')
-  const [loading, setLoading] = useState(true)
+  
+  const [authLoading, setAuthLoading] = useState(true)
+  const [roleLoading, setRoleLoading] = useState(true)
 
   const fetchRole = async (userId: string) => {
     try {
@@ -35,45 +37,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (e) {
       setUserRole('Dispatcher')
+    } finally {
+      setRoleLoading(false)
     }
   }
 
+  // Handle Auth Session
   useEffect(() => {
     let mounted = true
 
-    const initializeAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (mounted) {
-          setSession(session)
-          setUser(session?.user ?? null)
-          if (session?.user) {
-            await fetchRole(session.user.id)
-          } else {
-            setUserRole('Dispatcher')
-          }
-          setLoading(false)
-        }
-      } catch (error) {
-        console.error('Error getting session:', error)
-        if (mounted) {
-          setLoading(false)
-        }
-      }
-    }
-
-    initializeAuth()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (mounted) {
         setSession(session)
         setUser(session?.user ?? null)
-        if (session?.user) {
-          await fetchRole(session.user.id)
-        } else {
-          setUserRole('Dispatcher')
-        }
-        setLoading(false)
+        setAuthLoading(false)
+      }
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) {
+        setSession(session)
+        setUser(session?.user ?? null)
+        setAuthLoading(false)
       }
     })
 
@@ -83,6 +68,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [])
 
+  // Handle Role Fetching Reactively
+  useEffect(() => {
+    if (user) {
+      setRoleLoading(true)
+      fetchRole(user.id)
+    } else {
+      setUserRole('Dispatcher')
+      setRoleLoading(false)
+    }
+  }, [user])
+
   const signOut = async () => {
     await supabase.auth.signOut()
   }
@@ -91,7 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     session,
     user,
     userRole,
-    loading,
+    loading: authLoading || roleLoading,
     signOut
   }
 
