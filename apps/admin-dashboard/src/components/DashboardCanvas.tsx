@@ -13,6 +13,7 @@ import Inventory from './pages/Inventory'
 import Help from './pages/Help'
 import DriverRoster from './pages/DriverRoster'
 import FleetRegistry from './pages/FleetRegistry'
+import Preferences from './pages/Preferences'
 import { useAuth } from '../contexts/AuthContext'
 import { ShieldAlert } from 'lucide-react'
 
@@ -61,6 +62,7 @@ const DashboardCanvas: React.FC<DashboardCanvasProps> = ({ activeNav, setActiveN
       case 'fleet-monitor': return <FleetDispatchMonitor setActiveNav={setActiveNav} />
       case 'profile':       return <Profile />
       case 'settings':      return <Settings />
+      case 'preferences':   return <Preferences />
       case 'inventory':     return <Inventory setActiveNav={setActiveNav} />
       case 'help':          return <Help />
       case 'driver-roster': return <DriverRoster />
@@ -69,8 +71,8 @@ const DashboardCanvas: React.FC<DashboardCanvasProps> = ({ activeNav, setActiveN
   }
 
   return (
-    <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950">
-      <div className="max-w-7xl mx-auto px-6 py-8">
+    <main className="flex-1 pt-20">
+      <div className="max-w-7xl mx-auto px-6 pb-24">
         {renderPage()}
       </div>
     </main>

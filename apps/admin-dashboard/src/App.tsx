@@ -7,7 +7,7 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import LoginPage from './components/pages/LoginPage'
 import { useAuth } from './contexts/AuthContext'
 
-export type NavItem = 'dispatch' | 'waybills' | 'allocator' | 'bookings' | 'maintenance' | 'analytics' | 'fleet-monitor' | 'profile' | 'settings' | 'inventory' | 'help' | 'driver-roster' | 'fleet-registry'
+export type NavItem = 'dispatch' | 'waybills' | 'allocator' | 'bookings' | 'maintenance' | 'analytics' | 'fleet-monitor' | 'profile' | 'settings' | 'preferences' | 'inventory' | 'help' | 'driver-roster' | 'fleet-registry'
 
 const DashboardLayout: React.FC = () => {
   const { userRole } = useAuth()
@@ -34,7 +34,7 @@ const DashboardLayout: React.FC = () => {
       />
 
       {/* Main area */}
-      <div className="flex flex-col flex-1 min-w-0 lg:ml-[260px]">
+      <div className="relative flex flex-col flex-1 min-w-0 lg:ml-[260px] overflow-y-auto bg-slate-50 dark:bg-slate-950">
         <Header onMenuClick={() => setSidebarOpen(true)} onNavigate={(nav) => setActiveNav(nav)} />
         <DashboardCanvas activeNav={activeNav} setActiveNav={setActiveNav} />
       </div>

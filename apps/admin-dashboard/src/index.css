@@ -163,3 +163,58 @@ html.dark .card-hover:hover {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
+
+/* ─── Accessibility ─── */
+html.reduce-motion,
+html.reduce-motion * {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+/* Proper High Contrast Mode Overrides */
+html.high-contrast body {
+  background-color: #ffffff;
+}
+html.dark.high-contrast body {
+  background-color: #000000;
+}
+
+/* Starker text colors */
+html.high-contrast .text-slate-400,
+html.high-contrast .text-slate-500,
+html.high-contrast .text-slate-600 {
+  color: #1e293b !important; /* slate-800 */
+}
+
+html.dark.high-contrast .text-slate-400,
+html.dark.high-contrast .text-slate-500,
+html.dark.high-contrast .text-slate-600,
+html.high-contrast .admin-sidebar .text-slate-400,
+html.high-contrast .admin-sidebar .text-slate-500,
+html.high-contrast .admin-sidebar .text-slate-600,
+html.high-contrast .live-map-container .text-slate-400,
+html.high-contrast .live-map-container .text-slate-500,
+html.high-contrast .live-map-container .text-slate-600,
+html.high-contrast .admin-dark-overlay .text-slate-400,
+html.high-contrast .admin-dark-overlay .text-slate-500,
+html.high-contrast .admin-dark-overlay .text-slate-600 {
+  color: #f1f5f9 !important; /* slate-100 */
+}
+
+/* Stronger borders */
+html.high-contrast .border-slate-100,
+html.high-contrast .border-slate-200 {
+  border-color: #94a3b8 !important; /* slate-400 */
+}
+
+html.dark.high-contrast .border-slate-800,
+html.dark.high-contrast .border-slate-700,
+html.dark.high-contrast .border-white\/5,
+html.dark.high-contrast .border-white\/10 {
+  border-color: #475569 !important; /* slate-600 */
+}
+
+html.large-text {
+  font-size: 110%;
+}

@@ -15,30 +15,10 @@ import {
   Link2,
 } from 'lucide-react'
 import PageHeader from '../PageHeader'
+import LiveMap from '../LiveMap'
 import { supabase } from '../../lib/supabase'
 import SystemDiagnosticsPanel from '../SystemDiagnosticsPanel'
 import { useAuth } from '../../contexts/AuthContext'
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
-import 'leaflet/dist/leaflet.css'
-import L from 'leaflet'
-
-// Fix Leaflet's default icon path issues
-delete (L.Icon.Default.prototype as any)._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-})
-
-// Generate consistent coordinates for movers around Manila Port
-const manilaCoords: [number, number] = [14.5995, 120.9842]
-const getCoordForMover = (id: string): [number, number] => {
-  let hash = 0
-  for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash)
-  const latOffset = ((hash % 100) / 100 - 0.5) * 0.1
-  const lngOffset = (((hash >> 2) % 100) / 100 - 0.5) * 0.1
-  return [manilaCoords[0] + latOffset, manilaCoords[1] + lngOffset]
-}
 
 // Mapping themes for KPIs
 const themeMap: Record<string, { bg: string, text: string, borderTop: string }> = {
@@ -241,42 +221,13 @@ const FleetDispatchMonitor: React.FC<FleetDispatchMonitorProps> = ({ setActiveNa
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Map Section */}
         <div className={`relative bg-slate-900 rounded-2xl border border-slate-800 shadow-lg overflow-hidden h-80 flex flex-col ${userRole === 'Maintenance' ? 'lg:col-span-3' : 'lg:col-span-2'}`}>
-          <MapContainer 
-            center={manilaCoords} 
-            zoom={11} 
-            className="w-full h-full z-0"
-            zoomControl={false}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-            />
-            {movers.map(mover => (
-              <Marker key={mover.id} position={getCoordForMover(mover.id)}>
-                <Popup>
-                  <div className="text-xs">
-                    <p className="font-bold text-slate-800 font-display mb-1">{mover.id}</p>
-                    <p className="text-slate-500 mb-1">Status: <span className="font-semibold text-primary">{mover.status}</span></p>
-                    <p className="text-slate-500">Location: {mover.current_location || 'Terminal'}</p>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
-          </MapContainer>
-
-          {/* Glassmorphism Overlay Top Left */}
-          <div className="absolute top-4 left-4 z-10 pointer-events-none">
-             <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/50 dark:border-white/10 rounded-xl p-3 shadow-xl flex items-center gap-3 transition-all duration-200">
-               <div className="relative flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-               </div>
-               <div>
-                 <p className="text-slate-900 dark:text-white text-xs font-semibold tracking-wide font-display">Live GPS Tracking</p>
-                 <p className="text-slate-500 dark:text-slate-400 text-[10px]">Active Monitors: {activeMoversCount}</p>
-               </div>
-             </div>
-          </div>
+          <LiveMap
+            waybills={waybills.map(w => ({
+              tracking_number: w.tracking_number,
+              prime_mover_id: w.prime_mover_id,
+              status: w.status,
+            }))}
+          />
         </div>
 
         {/* Live Availability Roster & Pairing Interface */}

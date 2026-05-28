@@ -16,6 +16,7 @@ import {
   PenTool,
   ClipboardList,
   Users,
+  SunMoon,
 } from 'lucide-react'
 import type { NavItem } from '../App'
 import { useAuth } from '../contexts/AuthContext'
@@ -197,6 +198,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
   return (
     <aside
       className={[
+        'admin-sidebar',
         'fixed z-30 flex flex-col',
         // Mobile layout: anchored to the left, full height, rounded right edge
         'top-0 bottom-0 left-0 h-screen rounded-r-3xl border-r border-white/5',
@@ -353,8 +355,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
       <div className={`py-5 border-t border-white/5 space-y-1 bg-[#0B1120]/50 backdrop-blur-md lg:rounded-b-3xl transition-all duration-300 ${isCollapsed ? 'px-2' : 'px-4'}`}>
         {[
           ...(userRole !== 'Maintenance' ? [{ id: 'inventory' as NavItem, icon: <Package2 size={16} strokeWidth={1.8} />, label: 'Cargo Inventory' }] : []),
-          ...(userRole === 'Superadmin' ? [{ id: 'settings' as NavItem, icon: <Settings size={16} strokeWidth={1.8} />, label: 'Settings' }] : []),
-          { id: 'help' as NavItem, icon: <HelpCircle size={16} strokeWidth={1.8} />, label: 'Help & Support' },
         ].map((item) => {
           const isActive = activeNav === item.id
           return (

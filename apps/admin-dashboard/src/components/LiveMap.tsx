@@ -192,7 +192,7 @@ export default function LiveMap({ waybills }: LiveMapProps) {
   const totalTracked = markers.filter(m => m.lat && m.lng).length
 
   return (
-    <div className="relative w-full h-full rounded-2xl overflow-hidden">
+    <div className="relative w-full h-full rounded-2xl overflow-hidden live-map-container">
       {/* CSS for pulsing animation injected inline */}
       <style>{`
         @keyframes map-ping {

@@ -171,7 +171,7 @@ const SystemDiagnosticsPanel: React.FC<DiagnosticsProps> = ({ open, onClose }) =
       <aside
         className={[
           'fixed top-0 right-0 z-50 h-screen w-full max-w-md',
-          'bg-slate-950 border-l border-slate-800',
+          'bg-slate-950 border-l border-slate-800 admin-dark-overlay',
           'flex flex-col shadow-2xl shadow-black/60',
           'transition-transform duration-300 ease-in-out',
           visible ? 'translate-x-0' : 'translate-x-full',

@@ -321,97 +321,148 @@ function App() {
   // RENDER SECURITY GATE: Sign-In / Registration Screen
   if (!user) {
     return (
-      <div className="max-w-[420px] mx-auto min-h-screen bg-slate-950 shadow-2xl relative flex flex-col justify-center px-6 py-8 overflow-hidden border-x border-slate-900">
-        {/* Backdrop Glow Effects */}
-        <div className="absolute top-0 left-1/4 w-80 h-80 rounded-full bg-blue-500/10 blur-[120px] pointer-events-none"></div>
-        <div className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full bg-orange-500/10 blur-[120px] pointer-events-none"></div>
+      <div className="min-h-screen bg-slate-950 flex relative overflow-hidden w-full">
+        
+        {/* LEFT / MOBILE SIDE: The Form Container */}
+        <div className="w-full lg:w-1/2 flex flex-col justify-center items-center px-6 py-8 z-10 relative">
+          {/* Backdrop Glow Effects (Form side) */}
+          <div className="absolute top-0 left-1/4 w-80 h-80 rounded-full bg-blue-500/10 blur-[120px] pointer-events-none"></div>
+          <div className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full bg-orange-500/10 blur-[120px] pointer-events-none"></div>
 
-        <div className="relative overflow-hidden bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-3xl p-6 shadow-2xl">
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/30 mb-4">
-              <Truck size={24} className="text-white" strokeWidth={2.2} />
+          <div className="w-full max-w-[420px] relative overflow-hidden bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-3xl p-6 sm:p-8 shadow-2xl">
+            <div className="flex flex-col items-center mb-8">
+              <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/30 mb-4">
+                <Truck size={24} className="text-white" strokeWidth={2.2} />
+              </div>
+              <h1 className="text-2xl font-bold text-white font-mono tracking-tight">CargoNode</h1>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Client Portal PWA</p>
             </div>
-            <h1 className="text-2xl font-bold text-white font-mono tracking-tight">CargoNode</h1>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Client Portal PWA</p>
-          </div>
 
-          {/* Toggle Tabs */}
-          <div className="flex gap-2 bg-white/5 rounded-2xl p-1 mb-6">
-            <button
-              onClick={() => { setAuthView('login'); setAuthError(''); }}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${authView === 'login' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25' : 'text-slate-400 hover:text-slate-200'}`}
-            >
-              Sign In
-            </button>
-            <button
-              onClick={() => { setAuthView('register'); setAuthError(''); }}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${authView === 'register' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25' : 'text-slate-400 hover:text-slate-200'}`}
-            >
-              Register PWA
-            </button>
-          </div>
-
-          {authError && (
-            <div className="mb-4 bg-red-500/15 border border-red-500/25 rounded-xl p-3.5 text-xs font-medium text-red-400 flex items-start gap-2.5 animate-fade-in-down">
-              <AlertCircle size={14} className="shrink-0 mt-0.5" />
-              <span>{authError}</span>
+            {/* Toggle Tabs */}
+            <div className="flex gap-2 bg-white/5 rounded-2xl p-1 mb-6">
+              <button
+                onClick={() => { setAuthView('login'); setAuthError(''); }}
+                className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${authView === 'login' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25' : 'text-slate-400 hover:text-slate-200'}`}
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => { setAuthView('register'); setAuthError(''); }}
+                className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${authView === 'register' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25' : 'text-slate-400 hover:text-slate-200'}`}
+              >
+                Register PWA
+              </button>
             </div>
-          )}
 
-          <form onSubmit={authView === 'login' ? handleLogin : handleRegister} className="space-y-4">
-            {authView === 'register' && (
+            {authError && (
+              <div className="mb-4 bg-red-500/15 border border-red-500/25 rounded-xl p-3.5 text-xs font-medium text-red-400 flex items-start gap-2.5 animate-fade-in-down">
+                <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                <span>{authError}</span>
+              </div>
+            )}
+
+            <form onSubmit={authView === 'login' ? handleLogin : handleRegister} className="space-y-4">
+              {authView === 'register' && (
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Company Name</label>
+                  <input
+                    type="text"
+                    value={companyName}
+                    onChange={e => setCompanyName(e.target.value)}
+                    placeholder="e.g. NexaCorp Logistics Inc."
+                    required
+                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 px-4 text-xs font-medium text-white placeholder-slate-500 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                  />
+                </div>
+              )}
+
               <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Company Name</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Corporate Email</label>
                 <input
-                  type="text"
-                  value={companyName}
-                  onChange={e => setCompanyName(e.target.value)}
-                  placeholder="e.g. NexaCorp Logistics Inc."
+                  type="email"
+                  value={authEmail}
+                  onChange={e => setAuthEmail(e.target.value)}
+                  placeholder="client@company.com"
                   required
                   className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 px-4 text-xs font-medium text-white placeholder-slate-500 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
                 />
               </div>
-            )}
 
-            <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Corporate Email</label>
-              <input
-                type="email"
-                value={authEmail}
-                onChange={e => setAuthEmail(e.target.value)}
-                placeholder="client@company.com"
-                required
-                className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 px-4 text-xs font-medium text-white placeholder-slate-500 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
-              />
-            </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Password</label>
+                <input
+                  type="password"
+                  value={authPassword}
+                  onChange={e => setAuthPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 px-4 text-xs font-medium text-white placeholder-slate-500 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                />
+              </div>
 
-            <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Password</label>
-              <input
-                type="password"
-                value={authPassword}
-                onChange={e => setAuthPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 px-4 text-xs font-medium text-white placeholder-slate-500 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={authLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-3.5 text-xs font-bold shadow-lg shadow-blue-600/25 transition-all flex items-center justify-center gap-2 mt-6 active:scale-[0.98] disabled:opacity-70 cursor-pointer"
-            >
-              {authLoading ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : authView === 'login' ? (
-                'Sign In to Dashboard'
-              ) : (
-                'Submit Registration'
-              )}
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={authLoading}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-3.5 text-xs font-bold shadow-lg shadow-blue-600/25 transition-all flex items-center justify-center gap-2 mt-6 active:scale-[0.98] disabled:opacity-70 cursor-pointer"
+              >
+                {authLoading ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : authView === 'login' ? (
+                  'Sign In to Dashboard'
+                ) : (
+                  'Submit Registration'
+                )}
+              </button>
+            </form>
+          </div>
         </div>
+
+        {/* RIGHT SIDE: Enterprise Branding (Hidden on mobile) */}
+        <div className="hidden lg:flex lg:w-1/2 relative bg-[#020617] items-center justify-center p-12 overflow-hidden border-l border-white/5 shadow-[-20px_0_40px_rgba(0,0,0,0.5)]">
+          {/* Subtle grid pattern background */}
+          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+          
+          {/* Large dynamic glows */}
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-blue-600/20 blur-[120px] pointer-events-none animate-pulse"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none"></div>
+
+          {/* Value Prop Graphic */}
+          <div className="relative z-10 max-w-xl">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/20 to-blue-600/5 border border-blue-500/20 flex items-center justify-center mb-8 backdrop-blur-xl shadow-[0_0_30px_rgba(37,99,235,0.2)]">
+              <Ship className="text-blue-400 w-8 h-8" strokeWidth={1.5} />
+            </div>
+            <h2 className="text-4xl xl:text-5xl font-bold text-white mb-6 tracking-tight leading-[1.15]">
+              Intelligent Telemetry for <br/>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300">Global Supply Chains.</span>
+            </h2>
+            <p className="text-slate-400 text-lg leading-relaxed mb-10 max-w-lg">
+              Gain unparalleled visibility into your cargo movements. Track shipments in real-time, streamline logistics, and reduce turnaround times with our next-generation enterprise dispatch platform.
+            </p>
+            
+            <div className="grid grid-cols-2 gap-4 max-w-md">
+               <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 backdrop-blur-sm">
+                 <div className="flex items-center gap-3 mb-2">
+                   <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                     <CheckCheck size={14} className="text-emerald-400" />
+                   </div>
+                   <h3 className="text-white font-bold text-xl">99.9%</h3>
+                 </div>
+                 <p className="text-slate-400 text-[11px] font-semibold uppercase tracking-wider pl-11">Platform Uptime</p>
+               </div>
+               
+               <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 backdrop-blur-sm">
+                 <div className="flex items-center gap-3 mb-2">
+                   <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center">
+                     <MapPin size={14} className="text-blue-400" />
+                   </div>
+                   <h3 className="text-white font-bold text-xl">Real-time</h3>
+                 </div>
+                 <p className="text-slate-400 text-[11px] font-semibold uppercase tracking-wider pl-11">GPS Tracking</p>
+               </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     )
   }
