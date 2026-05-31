@@ -78,28 +78,23 @@ const LoginPage: React.FC = () => {
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-[120px] pointer-events-none group-hover:bg-blue-500/30 transition-all duration-1000" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-[120px] pointer-events-none group-hover:bg-indigo-500/30 transition-all duration-1000" />
 
-        <div className="relative z-10 flex items-center gap-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 border border-white/10">
-            <PackageSearch size={24} className="text-white drop-shadow-md" />
-          </div>
-          <span className="text-3xl font-bold text-white tracking-tight">Cargo<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Node</span></span>
+        <div className="relative z-10 flex flex-col items-start gap-8">
+          <img src="/PrimaryLogoForLightMode.png" alt="Quantevo Primary Logo" className="h-24 object-contain block dark:hidden" />
+          <img src="/PrimaryLogoForDarkMode.png" alt="Quantevo Primary Logo" className="h-24 object-contain hidden dark:block" />
         </div>
 
-        <div className="relative z-10 max-w-md animate-fade-in-down">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-medium mb-6 backdrop-blur-md">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-            System Online
-          </div>
-          <h1 className="text-5xl font-bold text-white mb-6 leading-tight tracking-tight">
-            Intelligent Fleet &<br/>Dispatch Management
+        <div className="relative z-10 max-w-md animate-fade-in-down mt-12">
+
+          <h1 className="text-4xl font-bold text-white mb-4 leading-tight tracking-tight">
+            Intelligent Dispatch
           </h1>
           <p className="text-lg text-slate-400 leading-relaxed font-light">
-            Gain complete visibility over your logistics operations. Monitor waybills, dispatch fleets, and optimize routes in real-time with an intuitive command center.
+            Streamlined logistics, fleet monitoring, and real-time operations command.
           </p>
         </div>
         
         <div className="relative z-10 text-sm text-slate-500 font-medium">
-          &copy; {new Date().getFullYear()} CargoNode Logistics Platform. All rights reserved.
+          &copy; {new Date().getFullYear()} Quantevo. All rights reserved.
         </div>
       </div>
 
@@ -111,11 +106,9 @@ const LoginPage: React.FC = () => {
 
         <div className="w-full max-w-[420px] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 p-8 sm:p-10 rounded-3xl shadow-2xl shadow-slate-200/50 dark:shadow-black/50 relative">
           
-          <div className="lg:hidden flex items-center justify-center gap-3 mb-10">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-              <PackageSearch size={22} className="text-white" />
-            </div>
-            <span className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Cargo<span className="text-blue-500">Node</span></span>
+          <div className="lg:hidden flex flex-col items-center justify-center mb-10">
+            <img src="/SecondaryLogoForLightMode.png" alt="Quantevo Secondary Logo" className="h-20 object-contain block dark:hidden" />
+            <img src="/SecondaryLogoForDarkMode.png" alt="Quantevo Secondary Logo" className="h-20 object-contain hidden dark:block" />
           </div>
 
           <div className="relative overflow-hidden min-h-[400px]">

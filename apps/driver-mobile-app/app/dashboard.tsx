@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert, ActivityIndicator } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert, ActivityIndicator, Image } from 'react-native'
 import * as Location from 'expo-location'
 import * as Network from 'expo-network'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -26,8 +26,8 @@ export default function DashboardScreen() {
   const [clockingIn, setClockingIn] = useState(false)
 
   // Determine if we should show the Clock-In Lobby
-  const showLobby = driverProfile && 
-    (driverProfile.status === 'Off Duty' || driverProfile.status === 'Available') && 
+  const showLobby = driverProfile &&
+    (driverProfile.status === 'Off Duty' || driverProfile.status === 'Available') &&
     !driverProfile.prime_mover_id
 
   // Fetch driver profile from public.drivers table + waybill
@@ -157,7 +157,7 @@ export default function DashboardScreen() {
         .order('created_at', { ascending: false })
         .limit(1)
         .single()
-      
+
       setActiveWaybill(data || null)
     }
 
@@ -374,7 +374,7 @@ export default function DashboardScreen() {
 
   const handleToggleShift = async () => {
     const isStarting = !shiftActive
-    
+
     try {
       if (isStarting) {
         // Start Shift
@@ -383,7 +383,7 @@ export default function DashboardScreen() {
         }
         if (activeWaybill && activeWaybill.status === 'Loading') {
           await supabase.from('waybills').update({ status: 'In Transit' }).eq('tracking_number', activeWaybill.tracking_number)
-          
+
           await supabase.from('tracking_milestones').insert({
             waybill_id: activeWaybill.tracking_number,
             title: 'Shift Started / In Transit',
@@ -391,7 +391,7 @@ export default function DashboardScreen() {
             status: 'in-progress',
             order_index: 2,
           })
-          
+
           setActiveWaybill({ ...activeWaybill, status: 'In Transit' })
         }
         setShiftActive(true)
@@ -466,7 +466,10 @@ export default function DashboardScreen() {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>DRIVER PORTAL</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <Image source={require('../assets/submark-logo.png')} style={{ width: 44, height: 44 }} resizeMode="contain" />
+            <Text style={styles.headerTitle}>DRIVER PORTAL</Text>
+          </View>
           <View style={styles.headerRight}>
             <View style={styles.networkBadge}>
               {isOnline ? (
@@ -487,15 +490,15 @@ export default function DashboardScreen() {
         {/* Lobby Status Card */}
         <View style={styles.lobbyStatusCard}>
           <View style={styles.lobbyStatusDot}>
-            <View style={[styles.statusIndicator, { 
-              backgroundColor: driverProfile.status === 'Available' ? '#10b981' : '#64748b' 
+            <View style={[styles.statusIndicator, {
+              backgroundColor: driverProfile.status === 'Available' ? '#10b981' : '#64748b'
             }]} />
           </View>
           <Text style={styles.lobbyStatusLabel}>
             {driverProfile.status === 'Available' ? 'CLOCKED IN — AWAITING DISPATCH' : 'OFF DUTY'}
           </Text>
           <Text style={styles.lobbyStatusSub}>
-            {driverProfile.status === 'Available' 
+            {driverProfile.status === 'Available'
               ? 'Waiting for admin to assign a truck...'
               : 'Clock in to mark yourself available for dispatch'}
           </Text>
@@ -506,7 +509,7 @@ export default function DashboardScreen() {
           <Animated.View style={{ opacity: glowAnim, position: 'absolute', width: 320, height: 320, borderRadius: 160, backgroundColor: driverProfile.status === 'Available' ? '#10b981' : '#3b82f6' }} />
           <TouchableOpacity
             style={[
-              styles.shiftBtn, 
+              styles.shiftBtn,
               driverProfile.status === 'Available' ? styles.lobbyBtnAvailable : styles.lobbyBtnOffDuty
             ]}
             onPress={driverProfile.status === 'Off Duty' ? handleClockIn : undefined}
@@ -532,7 +535,7 @@ export default function DashboardScreen() {
         {/* Hint */}
         <View style={styles.footer}>
           <Text style={{ color: '#475569', fontSize: 11, textAlign: 'center', fontWeight: '500' }}>
-            {driverProfile.status === 'Available' 
+            {driverProfile.status === 'Available'
               ? 'Your screen will automatically transition when a truck is assigned to you.'
               : 'Once clocked in, dispatch admins can pair you with a truck.'}
           </Text>
@@ -546,7 +549,10 @@ export default function DashboardScreen() {
     <View style={styles.container}>
       {/* Top Header - Network Status */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>TERMINAL HUB</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <Image source={require('../assets/submark-logo.png')} style={{ width: 44, height: 44 }} resizeMode="contain" />
+          <Text style={styles.headerTitle}>TERMINAL HUB</Text>
+        </View>
         <View style={styles.headerRight}>
           <View style={styles.networkBadge}>
             {isOnline ? (

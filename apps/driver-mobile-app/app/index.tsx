@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Image } from 'react-native'
 import { router } from 'expo-router'
 import { supabase } from '../lib/supabase'
 import { Truck } from 'lucide-react-native'
@@ -34,8 +34,7 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.logoContainer}>
-        <Truck color="#10b981" size={64} />
-        <Text style={styles.logoText}>CargoNode</Text>
+        <Image source={require('../assets/SubmarkLogo.png')} style={styles.logoImage} resizeMode="contain" />
         <Text style={styles.subtitle}>Driver Portal</Text>
       </View>
 
@@ -86,6 +85,11 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     marginBottom: 64,
+  },
+  logoImage: {
+    width: 140,
+    height: 140,
+    marginBottom: 20,
   },
   logoText: {
     color: '#ffffff',

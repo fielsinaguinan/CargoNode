@@ -212,18 +212,36 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
       ].join(' ')}
     >
       <div className={`relative flex items-center ${isCollapsed ? 'justify-center px-0' : 'justify-between px-6'} py-6 border-b border-white/5 transition-all duration-300`}>
-        <div className="flex items-center gap-3.5 min-w-0 overflow-hidden">
-          <div className="relative flex-shrink-0 w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30 transition-all duration-300">
-            <Truck size={20} className="text-white" strokeWidth={2} />
-            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#0B1120]" />
+        <div className="flex items-center min-w-0 overflow-hidden">
+          
+          {/* Submark Logo for Collapsed State */}
+          <div 
+            className={`transition-all duration-300 flex-none flex items-center justify-center ${
+              isCollapsed ? 'w-14 h-14 opacity-100' : 'w-0 h-0 opacity-0'
+            }`}
+          >
+            <img 
+              src="/SubmarkLogo.png" 
+              alt="CargoNode Submark Logo" 
+              className={`transition-all duration-300 object-contain ${
+                isCollapsed ? 'w-12 h-12' : 'w-0 h-0'
+              }`} 
+            />
           </div>
-          <div className={`min-w-0 transition-all duration-300 overflow-hidden ${isCollapsed ? 'opacity-0 max-w-0 flex-none' : 'opacity-100 max-w-[150px] w-auto'}`}>
-            <p className="text-white font-bold text-[15px] tracking-tight leading-none font-display whitespace-nowrap truncate">
-              CargoNode
-            </p>
-            <p className="text-slate-400 text-[10px] font-medium tracking-widest uppercase mt-1 whitespace-nowrap truncate">
-              CEBLE Trucking
-            </p>
+          
+          {/* Expanded State Logo */}
+          <div 
+            className={`transition-all duration-300 flex-none flex items-center ${
+              isCollapsed ? 'w-0 opacity-0' : 'w-[200px] opacity-100'
+            }`}
+          >
+            <img 
+              src="/SecondaryLogoForDarkMode.png" 
+              alt="Quantevo Logo" 
+              className={`transition-all duration-300 object-contain object-left ${
+                isCollapsed ? 'h-0 opacity-0' : 'h-12 opacity-100'
+              }`} 
+            />
           </div>
         </div>
 
@@ -248,9 +266,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
         {groups.map((group, gi) => (
           <div key={gi} className={`transition-all duration-300 ${gi > 0 ? (isCollapsed ? 'mt-4' : 'mt-8') : ''}`}>
             <div className={`transition-all duration-300 ${isCollapsed ? 'mb-0 opacity-0 max-h-0 overflow-hidden' : 'mb-2 opacity-100 max-h-10'}`}>
-               <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest px-3 whitespace-nowrap truncate">
-                 {group.groupLabel}
-               </p>
+              <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest px-3 whitespace-nowrap truncate">
+                {group.groupLabel}
+              </p>
             </div>
             <ul className="space-y-1">
               {group.links.map((link) => {
@@ -292,11 +310,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
 
                         {link.badge ? (
                           <span
-                            className={`${
-                              link.badgeColor === 'bg-amber-500' ? 'bg-accent' : 
-                              link.badgeColor === 'bg-blue-500' ? 'bg-primary' : 
-                              link.badgeColor ?? 'bg-slate-600'
-                            } text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center leading-none flex-shrink-0`}
+                            className={`${link.badgeColor === 'bg-amber-500' ? 'bg-accent' :
+                                link.badgeColor === 'bg-blue-500' ? 'bg-primary' :
+                                  link.badgeColor ?? 'bg-slate-600'
+                              } text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center leading-none flex-shrink-0`}
                           >
                             {link.badge}
                           </span>
@@ -379,7 +396,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
           )
         })}
 
-        <div 
+        <div
           onClick={() => { setActiveNav('profile'); onClose() }}
           className={`mt-4 flex items-center rounded-full hover:bg-white/5 cursor-pointer group transition-all duration-300 border border-transparent hover:border-white/5 ${isCollapsed ? 'justify-center px-0 py-3' : 'gap-3 px-3 py-3'}`}
           title={isCollapsed ? "Profile" : undefined}
@@ -392,12 +409,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
             <p className="text-slate-500 text-[10px] truncate group-hover:text-slate-400 transition-colors">{userRole}</p>
           </div>
           {!isCollapsed && (
-             <button 
-               onClick={(e) => { e.stopPropagation(); signOut(); }}
-               className="p-2 rounded-lg hover:bg-destructive/10 text-slate-500 hover:text-destructive transition-colors duration-200 cursor-pointer"
-             >
-               <LogOut size={16} className="flex-shrink-0" />
-             </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); signOut(); }}
+              className="p-2 rounded-lg hover:bg-destructive/10 text-slate-500 hover:text-destructive transition-colors duration-200 cursor-pointer"
+            >
+              <LogOut size={16} className="flex-shrink-0" />
+            </button>
           )}
         </div>
       </div>
