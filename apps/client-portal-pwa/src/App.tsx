@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react'
 import {
   Search,
   MapPin,
-  Truck,
   Check,
   Loader2,
   AlertCircle,
@@ -24,14 +23,58 @@ import {
   X
 } from 'lucide-react'
 import { supabase } from './lib/supabase'
+import { z } from 'zod'
 
+// --- Security Validation Schemas ---
+const profileSchema = z.object({
+  company_name: z.string().min(2, "Company name must be at least 2 characters"),
+  contact_person: z.string().min(2, "Contact person must be at least 2 characters"),
+  phone_number: z.string().regex(/^\+?[\d\s-]{8,}$/, "Invalid phone number"),
+  default_address: z.string().min(10, "Address must be at least 10 characters")
+})
+
+const registerSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters").regex(/\d/, "Password must contain at least 1 number"),
+  confirmPassword: z.string(),
+  companyName: z.string().min(2, "Company name must be at least 2 characters"),
+  contactPerson: z.string().min(2, "Contact person must be at least 2 characters"),
+  phoneNumber: z.string().regex(/^\+?[\d\s-]{8,}$/, "Invalid phone number"),
+  defaultAddress: z.string().min(10, "Address must be at least 10 characters"),
+  agreeToTerms: z.literal(true, { errorMap: () => ({ message: "You must agree to the Terms of Service and Privacy Policy" }) })
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+})
+
+const bookingSchema = z.object({
+  client_name: z.string().min(2, "Client name is required"),
+  origin: z.string().min(3, "Origin terminal must be at least 3 characters"),
+  destination: z.string().min(3, "Destination hub must be at least 3 characters"),
+  container_type: z.enum(['20-footer', '40-footer', 'LCL']),
+  target_date: z.string().refine((val) => {
+    const d = new Date(val);
+    return !isNaN(d.getTime());
+  }, { message: "Invalid target date" })
+})
+
+const supportSchema = z.object({
+  subject: z.string().min(5, "Subject must be at least 5 characters").max(100, "Subject is too long"),
+  message: z.string().min(10, "Message must be at least 10 characters").max(1000, "Message is too long")
+})
+// -----------------------------------
 function App() {
   // Auth state
   const [user, setUser] = useState<any>(null)
   const [authView, setAuthView] = useState<'login' | 'register'>('login')
   const [authEmail, setAuthEmail] = useState('')
   const [authPassword, setAuthPassword] = useState('')
+  const [authConfirmPassword, setAuthConfirmPassword] = useState('')
   const [companyName, setCompanyName] = useState('')
+  const [contactPerson, setContactPerson] = useState('')
+  const [phoneNumber, setPhoneNumber] = useState('')
+  const [defaultAddress, setDefaultAddress] = useState('')
+  const [agreeToTerms, setAgreeToTerms] = useState(false)
   const [authLoading, setAuthLoading] = useState(false)
   const [authError, setAuthError] = useState('')
 
@@ -88,14 +131,18 @@ function App() {
     setIsSavingProfile(true)
     setProfileSaveError('')
     try {
+      // 1. Zod Schema Validation
+      const validatedData = profileSchema.parse(profileForm)
+
       const { data: { session }, error: sessionErr } = await supabase.auth.getSession()
       if (sessionErr || !session?.user) throw new Error("Authentication error.")
 
+      // 2. RLS Security: .eq('id', session.user.id) ensures the authenticated user can only update their own profile
       const { error } = await supabase.from('client_profiles').update({
-        company_name: profileForm.company_name,
-        contact_person: profileForm.contact_person,
-        phone_number: profileForm.phone_number,
-        default_address: profileForm.default_address
+        company_name: validatedData.company_name,
+        contact_person: validatedData.contact_person,
+        phone_number: validatedData.phone_number,
+        default_address: validatedData.default_address
       }).eq('id', session.user.id)
 
       if (error) throw error
@@ -108,7 +155,11 @@ function App() {
       }, 2000)
     } catch (err: any) {
       console.error(err)
-      setProfileSaveError(err.message || 'Failed to save profile.')
+      if (err instanceof z.ZodError) {
+        setProfileSaveError((err as any).errors[0].message)
+      } else {
+        setProfileSaveError(err.message || 'Failed to save profile.')
+      }
     } finally {
       setIsSavingProfile(false)
     }
@@ -227,13 +278,24 @@ function App() {
   // Registration handler
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!authEmail || !authPassword || !companyName) return
     setAuthLoading(true)
     setAuthError('')
     try {
-      const { data, error } = await supabase.auth.signUp({
+      // 1. Zod Schema Validation
+      const validatedData = registerSchema.parse({
         email: authEmail,
-        password: authPassword
+        password: authPassword,
+        confirmPassword: authConfirmPassword,
+        companyName: companyName,
+        contactPerson: contactPerson,
+        phoneNumber: phoneNumber,
+        defaultAddress: defaultAddress,
+        agreeToTerms: agreeToTerms
+      })
+
+      const { data, error } = await supabase.auth.signUp({
+        email: validatedData.email,
+        password: validatedData.password
       })
       if (error) throw error
 
@@ -241,14 +303,21 @@ function App() {
         // Insert client profiles data
         const { error: profileErr } = await supabase.from('client_profiles').insert([{
           id: data.user.id,
-          email: authEmail,
-          company_name: companyName
+          email: validatedData.email,
+          company_name: validatedData.companyName,
+          contact_person: validatedData.contactPerson,
+          phone_number: validatedData.phoneNumber,
+          default_address: validatedData.defaultAddress
         }])
         if (profileErr) throw profileErr
       }
     } catch (err: any) {
       console.error(err)
-      setAuthError(err.message || 'Registration failed. Please try again.')
+      if (err instanceof z.ZodError) {
+        setAuthError((err as any).errors[0].message)
+      } else {
+        setAuthError(err.message || 'Registration failed. Please try again.')
+      }
     } finally {
       setAuthLoading(false)
     }
@@ -314,21 +383,32 @@ function App() {
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setBookingError('')
-    if (!bookingForm.client_name || !bookingForm.origin || !bookingForm.destination || !bookingForm.target_date || !user) return
+    if (!user) return
     setIsSubmitting(true)
 
     try {
-      const { data: { session }, error: sessionErr } = await supabase.auth.getSession()
-      if (sessionErr || !session?.user) throw new Error("Authentication error. Please log in again.")
-
-      const payload = {
+      // 1. Zod Schema Validation
+      const validatedData = bookingSchema.parse({
         client_name: bookingForm.client_name,
         origin: bookingForm.origin,
         destination: bookingForm.destination,
         container_type: bookingForm.container_type,
-        target_date: new Date(bookingForm.target_date).toISOString(),
+        target_date: bookingForm.target_date
+      })
+
+      const { data: { session }, error: sessionErr } = await supabase.auth.getSession()
+      if (sessionErr || !session?.user) throw new Error("Authentication error. Please log in again.")
+
+      const payload = {
+        client_name: validatedData.client_name,
+        origin: validatedData.origin,
+        destination: validatedData.destination,
+        container_type: validatedData.container_type,
+        target_date: new Date(validatedData.target_date).toISOString(),
         status: 'Pending',
-        client_id: session.user.id, // Securely attach client UUID from active session
+        // 2. RLS Security: client_id is injected strictly from the authenticated session,
+        // enforcing Row Level Security insert policies.
+        client_id: session.user.id,
       }
 
       const { error } = await supabase.from('customer_bookings').insert([payload])
@@ -339,7 +419,11 @@ function App() {
       setTimeout(() => setBookingSuccess(false), 4000)
     } catch (err: any) {
       console.error("Booking error:", err)
-      setBookingError(err.message || 'An unknown error occurred during booking.')
+      if (err instanceof z.ZodError) {
+        setBookingError((err as any).errors[0].message)
+      } else {
+        setBookingError(err.message || 'An unknown error occurred during booking.')
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -349,18 +433,22 @@ function App() {
   const handleSupportSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSupportError('')
-    if (!supportForm.subject || !supportForm.message || !user) return
+    if (!user) return
     setIsSubmittingSupport(true)
 
     try {
+      // 1. Zod Schema Validation
+      const validatedData = supportSchema.parse(supportForm)
+
       const { data: { session }, error: sessionErr } = await supabase.auth.getSession()
       if (sessionErr || !session?.user) throw new Error("Authentication error. Please log in again.")
 
-      // Forward the support request as a real-time notification alert to the Admin dashboard
+      // 2. Forward the support request as a real-time notification alert to the Admin dashboard.
+      // Notification insert is executed with the authenticated session context.
       const { error } = await supabase.from('notifications').insert([{
         type: 'info',
-        title: `Support Ticket: ${supportForm.subject}`,
-        description: `From ${clientProfile?.company_name || session.user.email}: ${supportForm.message}`,
+        title: `Support Ticket: ${validatedData.subject}`,
+        description: `From ${clientProfile?.company_name || session.user.email}: ${validatedData.message}`,
       }])
 
       if (error) throw error
@@ -370,7 +458,11 @@ function App() {
       setTimeout(() => setSupportSuccess(false), 4000)
     } catch (err: any) {
       console.error(err)
-      setSupportError(err.message || 'Failed to submit support request.')
+      if (err instanceof z.ZodError) {
+        setSupportError((err as any).errors[0].message)
+      } else {
+        setSupportError(err.message || 'Failed to submit support request.')
+      }
     } finally {
       setIsSubmittingSupport(false)
     }
@@ -412,10 +504,10 @@ function App() {
         {/* LEFT / MOBILE SIDE: The Form Container */}
         <div className="w-full lg:w-1/2 flex flex-col justify-center items-center px-6 py-8 z-10 relative">
           {/* Backdrop Glow Effects (Form side) */}
-          <div className="absolute top-0 left-1/4 w-80 h-80 rounded-full bg-blue-500/10 blur-[120px] pointer-events-none"></div>
-          <div className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full bg-orange-500/10 blur-[120px] pointer-events-none"></div>
+          <div className="absolute top-0 left-1/4 w-80 h-80 rounded-full bg-blue-500/10 dark:bg-blue-500/5 blur-[120px] pointer-events-none"></div>
+          <div className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full bg-orange-500/10 dark:bg-orange-500/5 blur-[120px] pointer-events-none"></div>
 
-          <div className="w-full max-w-[420px] relative overflow-hidden bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-3xl p-6 sm:p-8 shadow-2xl">
+          <div className="w-full max-w-[420px] relative overflow-hidden bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-3xl p-6 sm:p-8 shadow-2xl dark:shadow-none">
             <div className="flex flex-col items-center mb-8">
               <div className="h-20 mb-4 flex justify-center">
                 <img src="/PrimaryLogoForLightMode.png" alt="CargoNode Primary Logo" className="h-27 object-contain block dark:hidden" />
@@ -449,17 +541,52 @@ function App() {
 
             <form onSubmit={authView === 'login' ? handleLogin : handleRegister} className="space-y-4">
               {authView === 'register' && (
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Company Name</label>
-                  <input
-                    type="text"
-                    value={companyName}
-                    onChange={e => setCompanyName(e.target.value)}
-                    placeholder="e.g. NexaCorp Logistics Inc."
-                    required
-                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 px-4 text-xs font-medium text-white placeholder-slate-500 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
-                  />
-                </div>
+                <>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Company Name</label>
+                    <input
+                      type="text"
+                      value={companyName}
+                      onChange={e => setCompanyName(e.target.value)}
+                      placeholder="e.g. NexaCorp Logistics Inc."
+                      required
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 px-4 text-xs font-medium text-white placeholder-slate-500 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Contact Person</label>
+                    <input
+                      type="text"
+                      value={contactPerson}
+                      onChange={e => setContactPerson(e.target.value)}
+                      placeholder="e.g. Jane Doe"
+                      required
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 px-4 text-xs font-medium text-white placeholder-slate-500 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Phone Number</label>
+                    <input
+                      type="text"
+                      value={phoneNumber}
+                      onChange={e => setPhoneNumber(e.target.value)}
+                      placeholder="+1 (555) 000-0000"
+                      required
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 px-4 text-xs font-medium text-white placeholder-slate-500 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Default Address</label>
+                    <input
+                      type="text"
+                      value={defaultAddress}
+                      onChange={e => setDefaultAddress(e.target.value)}
+                      placeholder="123 Logistics Way, Port City"
+                      required
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 px-4 text-xs font-medium text-white placeholder-slate-500 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                    />
+                  </div>
+                </>
               )}
 
               <div>
@@ -486,6 +613,35 @@ function App() {
                 />
               </div>
 
+              {authView === 'register' && (
+                <>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Confirm Password</label>
+                    <input
+                      type="password"
+                      value={authConfirmPassword}
+                      onChange={e => setAuthConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 px-4 text-xs font-medium text-white placeholder-slate-500 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                    />
+                  </div>
+                  <div className="flex items-start gap-2 pt-2">
+                    <input
+                      type="checkbox"
+                      id="terms"
+                      checked={agreeToTerms}
+                      onChange={e => setAgreeToTerms(e.target.checked)}
+                      className="mt-1 w-4 h-4 rounded border-white/10 bg-white/5 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-900"
+                      required
+                    />
+                    <label htmlFor="terms" className="text-xs text-slate-400 leading-tight">
+                      I agree to the <a href="#" className="text-blue-400 hover:text-blue-300 transition-colors">Terms of Service</a> and <a href="#" className="text-blue-400 hover:text-blue-300 transition-colors">Privacy Policy</a>
+                    </label>
+                  </div>
+                </>
+              )}
+
               <button
                 type="submit"
                 disabled={authLoading}
@@ -509,8 +665,8 @@ function App() {
           <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
 
           {/* Large dynamic glows */}
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-blue-600/20 blur-[120px] pointer-events-none animate-pulse"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none"></div>
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-blue-600/20 dark:bg-blue-600/5 blur-[120px] pointer-events-none animate-pulse"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-indigo-500/10 dark:bg-indigo-500/5 blur-[120px] pointer-events-none"></div>
 
           {/* Value Prop Graphic */}
           <div className="relative z-10 max-w-xl">
@@ -535,8 +691,8 @@ function App() {
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-100 via-slate-50 to-slate-200 dark:from-slate-950 dark:via-slate-950 dark:to-slate-950 relative overflow-hidden flex flex-col">
       {/* Glow Effects */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full bg-primary/20 dark:bg-primary/10 blur-[120px] pointer-events-none"></div>
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full bg-accent/20 dark:bg-accent/10 blur-[120px] pointer-events-none"></div>
+      <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full bg-primary/20 dark:bg-primary/5 blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full bg-accent/20 dark:bg-accent/5 blur-[120px] pointer-events-none"></div>
       {/* Dynamic Client Header */}
       <header className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between z-50 sticky top-0 bg-white/60 dark:bg-slate-900/30 backdrop-blur-md border-b border-slate-200 dark:border-slate-700/50 shadow-sm dark:shadow-none">
         <div className="flex items-center gap-2.5 min-w-0">
@@ -633,7 +789,7 @@ function App() {
           
           {/* Tab Switcher */}
           <div className="sticky top-4 z-40 flex justify-center mb-6 pointer-events-none">
-            <div className="flex gap-1 bg-white/60 dark:bg-slate-800/60 backdrop-blur-2xl rounded-full p-1.5 border border-white dark:border-slate-600/50 shadow-lg shadow-slate-200/50 dark:shadow-xl w-full max-w-[280px] pointer-events-auto">
+            <div className="flex gap-1 bg-white/60 dark:bg-slate-800/60 backdrop-blur-2xl rounded-full p-1.5 border border-white dark:border-slate-600/50 shadow-lg shadow-slate-200/50 dark:shadow-none w-full max-w-[280px] pointer-events-auto">
               <button
                 onClick={() => { setActiveTab('track'); setResult(null); setError(''); }}
                 className={[
@@ -666,7 +822,7 @@ function App() {
           <>
             {/* Search Input Section */}
             {!result && (
-              <div className="mb-8 bg-white/80 dark:bg-slate-900/40 backdrop-blur-xl border border-white dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-2xl rounded-2xl p-6 sm:p-8 relative z-10">
+              <div className="mb-8 bg-white/80 dark:bg-slate-900/40 backdrop-blur-xl border border-white dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-none rounded-2xl p-6 sm:p-8 relative z-10">
                 <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-2 font-display tracking-tight">Track Cargo</h2>
                 <p className="text-xs text-slate-500 mb-6">Enter your waybill or container tracking number for live telemetry.</p>
 
@@ -826,7 +982,7 @@ function App() {
 
         {/* ═══════════════ BOOK FREIGHT TAB ═══════════════ */}
         {activeTab === 'book' && (
-          <div className="mb-8 bg-white/80 dark:bg-slate-900/40 backdrop-blur-xl border border-white/60 dark:border-slate-700/50 shadow-2xl rounded-2xl p-6 sm:p-8 relative z-10">
+          <div className="mb-8 bg-white/80 dark:bg-slate-900/40 backdrop-blur-xl border border-white/60 dark:border-slate-700/50 shadow-2xl dark:shadow-none rounded-2xl p-6 sm:p-8 relative z-10">
             <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-2 font-display tracking-tight">Book Freight</h2>
             <p className="text-xs text-slate-500 mb-6">Submit a dry cargo booking request. Our live dispatchers will review it shortly.</p>
 
@@ -970,7 +1126,7 @@ function App() {
 
         {/* ═══════════════ HELP & SUPPORT TAB ═══════════════ */}
         {activeTab === 'support' && (
-          <div className="mb-8 space-y-6 bg-white/80 dark:bg-slate-900/40 backdrop-blur-xl border border-white dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-2xl rounded-2xl p-6 sm:p-8 relative z-10 animate-fade-in-up">
+          <div className="mb-8 space-y-6 bg-white/80 dark:bg-slate-900/40 backdrop-blur-xl border border-white dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-none rounded-2xl p-6 sm:p-8 relative z-10 animate-fade-in-up">
             <div>
               <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-2 font-display tracking-tight">Help & Support</h2>
               <p className="text-xs text-slate-500">Find quick guides or submit a support ticket directly to our live Dispatch Command Center.</p>
@@ -1094,7 +1250,7 @@ function App() {
 
         {/* ═══════════════ SETTINGS TAB ═══════════════ */}
         {activeTab === 'settings' && (
-          <div className="mb-8 bg-white/80 dark:bg-slate-900/40 backdrop-blur-xl border border-white dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-2xl rounded-2xl p-6 sm:p-8 relative z-10 animate-fade-in-up">
+          <div className="mb-8 bg-white/80 dark:bg-slate-900/40 backdrop-blur-xl border border-white dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-none rounded-2xl p-6 sm:p-8 relative z-10 animate-fade-in-up">
             <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-2 font-display tracking-tight">Preferences</h2>
             <p className="text-xs text-slate-500 mb-8">Customize your Portal experience.</p>
             
@@ -1135,7 +1291,7 @@ function App() {
       {isSettingsModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={() => setIsSettingsModalOpen(false)}></div>
-          <div className="relative w-full max-w-lg bg-white/90 dark:bg-slate-900/60 backdrop-blur-2xl border border-white/60 dark:border-slate-700/50 shadow-2xl rounded-3xl overflow-hidden animate-fade-in-up">
+          <div className="relative w-full max-w-lg bg-white/90 dark:bg-slate-900/60 backdrop-blur-2xl border border-white/60 dark:border-slate-700/50 shadow-2xl dark:shadow-none rounded-3xl overflow-hidden animate-fade-in-up">
             <div className="flex items-center justify-between p-6 border-b border-white/10 dark:border-slate-700/50">
               <h2 className="text-lg font-bold text-slate-900 dark:text-white font-display tracking-tight flex items-center gap-2">
                 <User size={18} className="text-primary" /> Profile Settings
@@ -1162,11 +1318,14 @@ function App() {
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 block">Corporate Name</label>
                   <input
                     type="text"
-                    required
+                    disabled
                     value={profileForm.company_name}
-                    onChange={e => setProfileForm(p => ({...p, company_name: e.target.value}))}
-                    className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 px-4 text-sm font-semibold text-slate-800 dark:text-white outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-sm"
+                    className="w-full bg-slate-100/80 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 rounded-xl py-2.5 px-4 text-sm font-semibold text-slate-500 dark:text-slate-400 cursor-not-allowed shadow-sm"
                   />
+                  <p className="text-[10px] text-slate-400 mt-1.5 flex items-start gap-1">
+                    <AlertCircle size={12} className="shrink-0 mt-0.5" />
+                    To change your registered corporate entity name, please submit a Support Ticket.
+                  </p>
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 block">Contact Person</label>
