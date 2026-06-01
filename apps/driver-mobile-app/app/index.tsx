@@ -65,7 +65,7 @@ export default function LoginScreen() {
           activeOpacity={0.8}
         >
           {loading ? (
-            <ActivityIndicator color="#000" />
+            <ActivityIndicator color="#FFFFFF" />
           ) : (
             <Text style={styles.buttonText}>AUTHENTICATE</Text>
           )}
@@ -78,7 +78,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#0F172A',
     justifyContent: 'center',
     padding: 24,
   },
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   subtitle: {
-    color: '#10b981',
+    color: '#3B82F6',
     fontSize: 16,
     fontWeight: '600',
     letterSpacing: 2,
@@ -111,16 +111,16 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   input: {
-    backgroundColor: '#111111',
+    backgroundColor: '#1E293B',
     borderWidth: 1,
-    borderColor: '#333333',
+    borderColor: '#334155',
     borderRadius: 12,
     padding: 16,
     color: '#ffffff',
     fontSize: 16,
   },
   button: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#2563EB',
     borderRadius: 12,
     padding: 18,
     alignItems: 'center',
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: '#000000',
+    color: '#FFFFFF',
     fontWeight: '800',
     fontSize: 16,
     letterSpacing: 1,

@@ -25,9 +25,7 @@ interface MaintenanceAlert {
 interface PrimeMover {
   id: string
   status: string
-  current_lat: number
-  current_lng: number
-  total_mileage: number
+  current_location: string
   last_sync: string
   maintenance_alerts: MaintenanceAlert[] | null
 }
@@ -52,7 +50,7 @@ const Maintenance: React.FC = () => {
     const { data } = await supabase
       .from('prime_movers')
       .select(`
-        id, status, current_lat, current_lng, total_mileage, last_sync,
+        id, status, current_location, last_sync,
         maintenance_alerts ( id, alert_type, triggered_at_mileage, status )
       `)
       .order('id', { ascending: true })
@@ -169,7 +167,7 @@ const Maintenance: React.FC = () => {
                       <div className="flex items-center gap-1 mt-0.5">
                         <MapPin size={10} className="text-slate-400" />
                         <p className="text-xs font-mono text-slate-500 dark:text-slate-400">
-                           {v.current_lat?.toFixed(4)}, {v.current_lng?.toFixed(4)}
+                           {v.current_location || 'Terminal'}
                         </p>
                       </div>
                     </div>
@@ -190,7 +188,7 @@ const Maintenance: React.FC = () => {
               <div className="px-5 py-4 space-y-2.5">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400 dark:text-slate-500 flex items-center gap-1.5"><Gauge size={11} /> Total Mileage</span>
-                  <span className="text-slate-700 dark:text-slate-300 font-bold tracking-tight text-sm">{(v.total_mileage || 0).toLocaleString()} <span className="font-medium text-xs text-slate-400">km</span></span>
+                  <span className="text-slate-700 dark:text-slate-300 font-bold tracking-tight text-sm">-- <span className="font-medium text-xs text-slate-400">km</span></span>
                 </div>
                 
                 <div className="flex items-center justify-between text-xs mt-1">
@@ -216,10 +214,22 @@ const Maintenance: React.FC = () => {
               {/* Card footer */}
               <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between">
                 <span className="text-[11px] text-slate-400 dark:text-slate-500">DB Status: {v.status}</span>
-                <button className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors">
-                  View History
-                  <ChevronRight size={12} />
-                </button>
+                {v.status === 'Maintenance' ? (
+                  <button 
+                    onClick={async () => {
+                      await supabase.from('prime_movers').update({ status: 'Pier Standby' }).eq('id', v.id)
+                    }}
+                    className="flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
+                  >
+                    Release to Standby
+                    <ChevronRight size={12} />
+                  </button>
+                ) : (
+                  <button className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors">
+                    View History
+                    <ChevronRight size={12} />
+                  </button>
+                )}
               </div>
             </div>
           )
@@ -251,7 +261,7 @@ const Maintenance: React.FC = () => {
                 >
                   <option value="" disabled>Choose a prime mover...</option>
                   {primeMovers.map(pm => (
-                    <option key={pm.id} value={pm.id}>{pm.id} ({pm.total_mileage?.toLocaleString() || 0} km)</option>
+                    <option key={pm.id} value={pm.id}>{pm.id}</option>
                   ))}
                 </select>
               </div>
