@@ -499,21 +499,22 @@ function App() {
   // RENDER SECURITY GATE: Sign-In / Registration Screen
   if (!user) {
     return (
-      <div className="min-h-screen bg-slate-950 flex relative overflow-hidden w-full">
+      <main className="min-h-screen w-full flex flex-col items-center justify-center bg-[#060b13] relative overflow-hidden p-4">
+        {/* Subtle Background Grid */}
+        <div className="absolute inset-0 z-0 opacity-5" style={{ backgroundImage: 'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
+        
+        {/* Radial Glow Effect */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/5 blur-[130px] rounded-full pointer-events-none"></div>
 
-        {/* LEFT / MOBILE SIDE: The Form Container */}
-        <div className="w-full lg:w-1/2 flex flex-col justify-center items-center px-6 py-8 z-10 relative">
-          {/* Backdrop Glow Effects (Form side) */}
-          <div className="absolute top-0 left-1/4 w-80 h-80 rounded-full bg-blue-500/10 dark:bg-blue-500/5 blur-[120px] pointer-events-none"></div>
-          <div className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full bg-orange-500/10 dark:bg-orange-500/5 blur-[120px] pointer-events-none"></div>
-
-          <div className="w-full max-w-[420px] relative overflow-hidden bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-3xl p-6 sm:p-8 shadow-2xl dark:shadow-none">
-            <div className="flex flex-col items-center mb-8">
-              <div className="h-20 mb-4 flex justify-center">
-                <img src="/PrimaryLogoForLightMode.png" alt="CargoNode Primary Logo" className="h-27 object-contain block dark:hidden" />
-                <img src="/PrimaryLogoForDarkMode.png" alt="CargoNode Primary Logo" className="h-27 object-contain hidden dark:block" />
+        {/* Card Container Restraint */}
+        <div className="max-w-md w-full relative z-10">
+          <div className="w-full relative overflow-hidden bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-3xl p-6 sm:p-8 shadow-2xl dark:shadow-none">
+            <div className="flex flex-col items-center mb-8 gap-4">
+              <div className="flex justify-center">
+                <img src="/PrimaryLogoForLightMode.png" alt="CargoNode Primary Logo" className="h-16 object-contain block dark:hidden" />
+                <img src="/PrimaryLogoForDarkMode.png" alt="CargoNode Primary Logo" className="h-16 object-contain hidden dark:block" />
               </div>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Client Portal PWA</p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Client Portal PWA</p>
             </div>
 
             {/* Toggle Tabs */}
@@ -658,32 +659,7 @@ function App() {
             </form>
           </div>
         </div>
-
-        {/* RIGHT SIDE: Enterprise Branding (Hidden on mobile) */}
-        <div className="hidden lg:flex lg:w-1/2 relative bg-[#020617] items-center justify-center p-12 overflow-hidden border-l border-white/5 shadow-[-20px_0_40px_rgba(0,0,0,0.5)]">
-          {/* Subtle grid pattern background */}
-          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
-
-          {/* Large dynamic glows */}
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-blue-600/20 dark:bg-blue-600/5 blur-[120px] pointer-events-none animate-pulse"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-indigo-500/10 dark:bg-indigo-500/5 blur-[120px] pointer-events-none"></div>
-
-          {/* Value Prop Graphic */}
-          <div className="relative z-10 max-w-xl">
-            <img src="/SecondaryLogoForDarkMode.png" alt="CargoNode Primary Logo" className="h-24 object-contain mb-8" />
-            <h2 className="text-4xl xl:text-5xl font-bold text-white mb-6 tracking-tight leading-[1.15]">
-              Intelligent Telemetry for <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300">Global Supply Chains.</span>
-            </h2>
-            <p className="text-slate-400 text-lg leading-relaxed mb-10 max-w-lg">
-              Track shipments in real-time and streamline your logistics.
-            </p>
-
-
-          </div>
-        </div>
-
-      </div>
+      </main>
     )
   }
 

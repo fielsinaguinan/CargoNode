@@ -68,48 +68,23 @@ const LoginPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 font-sans">
-      {/* Left side - Branding (hidden on mobile) */}
-      <div className="hidden lg:flex lg:w-1/2 bg-slate-900 flex-col justify-between p-12 relative overflow-hidden group admin-dark-overlay">
-        {/* Subtle grid pattern background */}
-        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+      <main className="min-h-screen w-full flex flex-col items-center justify-center bg-[#060b13] relative overflow-hidden p-4 font-sans">
+        {/* Subtle Background Grid */}
+        <div className="absolute inset-0 z-0 opacity-5" style={{ backgroundImage: 'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
         
-        {/* Abstract glowing orb for aesthetics */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-[120px] pointer-events-none group-hover:bg-blue-500/30 transition-all duration-1000" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-[120px] pointer-events-none group-hover:bg-indigo-500/30 transition-all duration-1000" />
+        {/* Radial Glow Effect */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/5 blur-[130px] rounded-full pointer-events-none"></div>
 
-        <div className="relative z-10 flex flex-col items-start gap-8">
-          <img src="/PrimaryLogoForLightMode.png" alt="Quantevo Primary Logo" className="h-24 object-contain block dark:hidden" />
-          <img src="/PrimaryLogoForDarkMode.png" alt="Quantevo Primary Logo" className="h-24 object-contain hidden dark:block" />
-        </div>
-
-        <div className="relative z-10 max-w-md animate-fade-in-down mt-12">
-
-          <h1 className="text-4xl font-bold text-white mb-4 leading-tight tracking-tight">
-            Intelligent Dispatch
-          </h1>
-          <p className="text-lg text-slate-400 leading-relaxed font-light">
-            Streamlined logistics, fleet monitoring, and real-time operations command.
-          </p>
-        </div>
-        
-        <div className="relative z-10 text-sm text-slate-500 font-medium">
-          &copy; {new Date().getFullYear()} Quantevo. All rights reserved.
-        </div>
-      </div>
-
-      {/* Right side - Login Form Container */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative overflow-hidden">
-        {/* Subtle background element for right side in dark mode */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 -z-10" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-[100px] -z-10 pointer-events-none" />
-
-        <div className="w-full max-w-[420px] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 p-8 sm:p-10 rounded-3xl shadow-2xl shadow-slate-200/50 dark:shadow-black/50 relative">
-          
-          <div className="lg:hidden flex flex-col items-center justify-center mb-10">
-            <img src="/SecondaryLogoForLightMode.png" alt="Quantevo Secondary Logo" className="h-20 object-contain block dark:hidden" />
-            <img src="/SecondaryLogoForDarkMode.png" alt="Quantevo Secondary Logo" className="h-20 object-contain hidden dark:block" />
-          </div>
+        {/* Card Container Restraint */}
+        <div className="max-w-md w-full relative z-10">
+          <div className="w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 p-8 sm:p-10 rounded-3xl shadow-2xl shadow-slate-200/50 dark:shadow-black/50 relative">
+            
+            <div className="flex flex-col items-center justify-center mb-10 gap-4">
+              <div className="flex justify-center">
+                <img src="/SecondaryLogoForLightMode.png" alt="Quantevo Secondary Logo" className="h-16 object-contain block dark:hidden" />
+                <img src="/SecondaryLogoForDarkMode.png" alt="Quantevo Secondary Logo" className="h-16 object-contain hidden dark:block" />
+              </div>
+            </div>
 
           <div className="relative overflow-hidden min-h-[400px]">
             {/* --- VIEW: LOGIN --- */}
@@ -261,8 +236,8 @@ const LoginPage: React.FC = () => {
 
           </div>
         </div>
-      </div>
-    </div>
+        </div>
+      </main>
   )
 }
 
