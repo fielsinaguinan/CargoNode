@@ -70,7 +70,7 @@ const FleetRegistry: React.FC = () => {
         id: truckId,
         plate_number: plateNumber,
         capacity: capacity,
-        status: 'Maintenance'
+        status: 'Pier Standby'
       }])
 
       if (error) throw error

@@ -38,11 +38,44 @@ export default function DashboardScreen() {
         if (!user) return
 
         // Try to find the driver in public.drivers by their auth user id
-        const { data: driver } = await supabase
+        let { data: driver } = await supabase
           .from('drivers')
           .select('*')
           .eq('id', user.id)
           .single()
+
+        // Auto-provision or migrate driver profile if missing
+        if (!driver && user.email) {
+          const { data: existingByEmail } = await supabase
+            .from('drivers')
+            .select('*')
+            .eq('email', user.email)
+            .single()
+            
+          if (existingByEmail) {
+            // Migrate admin-created row to use actual Auth UUID
+            await supabase.from('drivers').delete().eq('id', existingByEmail.id)
+            const { data: migrated } = await supabase
+              .from('drivers')
+              .insert([{ ...existingByEmail, id: user.id }])
+              .select().single()
+            driver = migrated || { ...existingByEmail, id: user.id }
+          } else {
+            // Auto-onboard new driver
+            const metaPmId = user.user_metadata?.prime_mover_id as string | undefined
+            const { data: newDriver } = await supabase
+              .from('drivers')
+              .insert([{
+                id: user.id,
+                email: user.email,
+                full_name: user.user_metadata?.full_name || user.email.split('@')[0],
+                status: 'Available',
+                prime_mover_id: metaPmId || null
+              }])
+              .select().single()
+            driver = newDriver
+          }
+        }
 
         if (driver) {
           setDriverProfile(driver)
@@ -60,7 +93,7 @@ export default function DashboardScreen() {
             if (waybill) setActiveWaybill(waybill)
           }
         } else {
-          // Fallback: use user metadata for prime_mover_id (legacy behavior)
+          // Extreme fallback if DB inserts fail
           const metaPmId = user.user_metadata?.prime_mover_id as string | undefined
           if (metaPmId) {
             setPrimMoverId(metaPmId)
@@ -102,12 +135,14 @@ export default function DashboardScreen() {
 
   // Real-time subscription to the driver's own profile in public.drivers
   useEffect(() => {
+    let channel: any = null;
+
     const setupRealtimeDriverWatch = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const channel = supabase
-        .channel('driver_profile_watch')
+      channel = supabase
+        .channel(`driver_profile_watch_${user.id}`)
         .on(
           'postgres_changes',
           { event: 'UPDATE', schema: 'public', table: 'drivers', filter: `id=eq.${user.id}` },
@@ -137,11 +172,15 @@ export default function DashboardScreen() {
           }
         )
         .subscribe()
-
-      return () => { supabase.removeChannel(channel) }
     }
 
     setupRealtimeDriverWatch()
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
+    }
   }, [])
 
   // Real-time listener for waybill assignments
@@ -454,7 +493,7 @@ export default function DashboardScreen() {
   if (loadingProfile) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator color="#10b981" size="large" />
+        <ActivityIndicator color="#3b82f6" size="large" />
         <Text style={{ color: '#64748b', marginTop: 16, fontSize: 13 }}>Authenticating driver profile...</Text>
       </View>
     )
@@ -491,7 +530,7 @@ export default function DashboardScreen() {
         <View style={styles.lobbyStatusCard}>
           <View style={styles.lobbyStatusDot}>
             <View style={[styles.statusIndicator, {
-              backgroundColor: driverProfile.status === 'Available' ? '#10b981' : '#64748b'
+              backgroundColor: driverProfile.status === 'Available' ? '#EA580C' : '#64748b'
             }]} />
           </View>
           <Text style={styles.lobbyStatusLabel}>
@@ -506,7 +545,7 @@ export default function DashboardScreen() {
 
         {/* Large Clock-In Button */}
         <View style={styles.toggleContainer}>
-          <Animated.View style={{ opacity: glowAnim, position: 'absolute', width: 320, height: 320, borderRadius: 160, backgroundColor: driverProfile.status === 'Available' ? '#10b981' : '#3b82f6' }} />
+          <Animated.View style={{ opacity: glowAnim, position: 'absolute', width: 320, height: 320, borderRadius: 160, backgroundColor: driverProfile.status === 'Available' ? '#EA580C' : '#2563EB' }} />
           <TouchableOpacity
             style={[
               styles.shiftBtn,
@@ -517,14 +556,14 @@ export default function DashboardScreen() {
             disabled={clockingIn || driverProfile.status === 'Available'}
           >
             {clockingIn ? (
-              <ActivityIndicator color="#10b981" size="large" />
+              <ActivityIndicator color="#EA580C" size="large" />
             ) : (
               <>
-                <Zap size={48} color={driverProfile.status === 'Available' ? '#10b981' : '#3b82f6'} />
-                <Text style={[styles.shiftBtnText, { color: driverProfile.status === 'Available' ? '#10b981' : '#3b82f6', fontSize: 22, marginTop: 16 }]}>
+                <Zap size={48} color={driverProfile.status === 'Available' ? '#EA580C' : '#2563EB'} />
+                <Text style={[styles.shiftBtnText, { color: driverProfile.status === 'Available' ? '#EA580C' : '#2563EB', fontSize: 22, marginTop: 16 }]}>
                   {driverProfile.status === 'Available' ? 'AVAILABLE' : 'CLOCK IN'}
                 </Text>
-                <Text style={[styles.transmittingText, { color: driverProfile.status === 'Available' ? '#34d399' : '#60a5fa', marginTop: 8 }]}>
+                <Text style={[styles.transmittingText, { color: driverProfile.status === 'Available' ? '#F97316' : '#60a5fa', marginTop: 8 }]}>
                   {driverProfile.status === 'Available' ? 'Listening for dispatch...' : 'Tap to mark available'}
                 </Text>
               </>
@@ -634,7 +673,7 @@ export default function DashboardScreen() {
           onPress={handleMarkDelivered}
           disabled={!shiftActive || !activeWaybill || activeWaybill?.status === 'Delivered'}
         >
-          <CheckCircle size={24} color="#000000" />
+          <CheckCircle size={24} color="#FFFFFF" />
           <Text style={styles.deliveredBtnText}>
             {activeWaybill?.status === 'Delivered' ? 'DELIVERED ✓' : 'MARK AS DELIVERED'}
           </Text>
@@ -647,7 +686,7 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#0F172A',
     padding: 24,
     paddingTop: 60,
   },
@@ -672,12 +711,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#111111',
+    backgroundColor: '#1E293B',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#333333',
+    borderColor: '#334155',
   },
   networkText: {
     fontSize: 12,
@@ -686,9 +725,9 @@ const styles = StyleSheet.create({
   signOutBtn: {
     padding: 8,
     borderRadius: 10,
-    backgroundColor: '#111111',
+    backgroundColor: '#1E293B',
     borderWidth: 1,
-    borderColor: '#333333',
+    borderColor: '#334155',
   },
   syncBanner: {
     backgroundColor: '#ef444420',
@@ -710,9 +749,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   waybillCard: {
-    backgroundColor: '#111111',
+    backgroundColor: '#1E293B',
     borderWidth: 1,
-    borderColor: '#222222',
+    borderColor: '#334155',
     borderRadius: 16,
     padding: 20,
   },
@@ -731,15 +770,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   pmBadge: {
-    color: '#10b981',
+    color: '#EA580C',
     fontWeight: '700',
     fontSize: 11,
-    backgroundColor: '#10b98120',
+    backgroundColor: '#EA580C20',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#10b98140',
+    borderColor: '#EA580C40',
   },
   waybillNumber: {
     color: '#ffffff',
@@ -779,13 +818,13 @@ const styles = StyleSheet.create({
     borderWidth: 4,
   },
   shiftBtnInactive: {
-    backgroundColor: '#111111',
-    borderColor: '#333333',
+    backgroundColor: '#1E293B',
+    borderColor: '#334155',
   },
   shiftBtnActive: {
-    backgroundColor: '#042f2e',
-    borderColor: '#10b981',
-    shadowColor: '#10b981',
+    backgroundColor: '#431407',
+    borderColor: '#EA580C',
+    shadowColor: '#EA580C',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 30,
@@ -800,10 +839,10 @@ const styles = StyleSheet.create({
     color: '#475569',
   },
   shiftBtnTextActive: {
-    color: '#10b981',
+    color: '#EA580C',
   },
   transmittingText: {
-    color: '#34d399',
+    color: '#F97316',
     fontSize: 12,
     fontWeight: '600',
     marginTop: 12,
@@ -818,7 +857,7 @@ const styles = StyleSheet.create({
     marginTop: 'auto',
   },
   deliveredBtn: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#EA580C',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -827,16 +866,16 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   deliveredBtnText: {
-    color: '#000000',
+    color: '#FFFFFF',
     fontWeight: '900',
     fontSize: 18,
     letterSpacing: 1,
   },
   // Clock-In Lobby styles
   lobbyStatusCard: {
-    backgroundColor: '#111111',
+    backgroundColor: '#1E293B',
     borderWidth: 1,
-    borderColor: '#222222',
+    borderColor: '#334155',
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
@@ -863,18 +902,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   lobbyBtnOffDuty: {
-    backgroundColor: '#0a1628',
-    borderColor: '#1e40af',
-    shadowColor: '#3b82f6',
+    backgroundColor: '#1E3A8A',
+    borderColor: '#2563EB',
+    shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.4,
     shadowRadius: 20,
     elevation: 10,
   },
   lobbyBtnAvailable: {
-    backgroundColor: '#042f2e',
-    borderColor: '#10b981',
-    shadowColor: '#10b981',
+    backgroundColor: '#431407',
+    borderColor: '#EA580C',
+    shadowColor: '#EA580C',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.4,
     shadowRadius: 20,
