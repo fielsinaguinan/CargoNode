@@ -21,6 +21,7 @@ import {
 import type { NavItem } from '../App'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
+import { useSystemPreferences } from './SystemPreferencesProvider'
 
 interface SidebarProps {
   activeNav: NavItem
@@ -144,7 +145,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
   const [delayedWaybills, setDelayedWaybills] = useState(0)
   const [fleetStats, setFleetStats] = useState({ active: 0, inTransit: 0, pierStandby: 0, maintenance: 0, total: 0 })
   const [pendingBookingsCount, setPendingBookingsCount] = useState(0)
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const { sidebarCollapsed: isCollapsed } = useSystemPreferences()
 
   useEffect(() => {
     // Set `--sidebar-width` based on collapse state to align main content with 16px margins
@@ -244,14 +245,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, open, onClos
             />
           </div>
         </div>
-
-        {/* Toggle Button */}
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className={`hidden lg:flex absolute top-1/2 -translate-y-1/2 -right-3.5 w-7 h-7 bg-slate-800 border border-white/10 rounded-full items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all duration-300 z-40 shadow-lg cursor-pointer ${isCollapsed ? 'rotate-180 -right-3.5' : ''}`}
-        >
-          <ChevronLeft size={14} />
-        </button>
 
         <button
           onClick={onClose}

@@ -7,13 +7,17 @@ import { ThemeProvider } from './components/ThemeProvider.tsx'
 import { AccessibilityProvider } from './components/AccessibilityProvider.tsx'
 import { AuthProvider } from './contexts/AuthContext.tsx'
 
+import { SystemPreferencesProvider } from './components/SystemPreferencesProvider.tsx'
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
         <ThemeProvider defaultTheme="system" storageKey="cargonode-theme">
           <AccessibilityProvider>
-            <App />
+            <SystemPreferencesProvider>
+              <App />
+            </SystemPreferencesProvider>
           </AccessibilityProvider>
         </ThemeProvider>
       </AuthProvider>

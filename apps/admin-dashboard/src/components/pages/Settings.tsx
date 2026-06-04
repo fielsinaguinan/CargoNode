@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Bell, Smartphone } from 'lucide-react'
+import { supabase } from '../../lib/supabase'
 import PageHeader from '../PageHeader'
 
 // Custom hook for local storage
@@ -28,7 +29,32 @@ function useLocalStorage<T>(key: string, initialValue: T) {
 const Settings: React.FC = () => {
   // Use local storage for other settings so they persist
   const [urgentAlerts, setUrgentAlerts] = useLocalStorage('cargonode-urgent-alerts', true)
-  const [smsAlerts, setSmsAlerts] = useLocalStorage('cargonode-sms-alerts', false)
+  const [smsAlerts, setSmsAlerts] = useState(false)
+  const [loadingSms, setLoadingSms] = useState(true)
+
+  useEffect(() => {
+    const fetchSmsSetting = async () => {
+      const { data, error } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'sms_alerts_enabled')
+        .single()
+      
+      if (!error && data) {
+        setSmsAlerts(data.value === 'true' || data.value === true)
+      }
+      setLoadingSms(false)
+    }
+
+    fetchSmsSetting()
+  }, [])
+
+  const handleSmsToggle = async (checked: boolean) => {
+    setSmsAlerts(checked)
+    await supabase
+      .from('system_settings')
+      .upsert({ key: 'sms_alerts_enabled', value: checked })
+  }
 
   return (
     <div className="space-y-7 animate-fade-in-down">
@@ -80,7 +106,8 @@ const Settings: React.FC = () => {
                   type="checkbox" 
                   className="sr-only peer" 
                   checked={smsAlerts}
-                  onChange={(e) => setSmsAlerts(e.target.checked)}
+                  disabled={loadingSms}
+                  onChange={(e) => handleSmsToggle(e.target.checked)}
                 />
                 <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
               </label>

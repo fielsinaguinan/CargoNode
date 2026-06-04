@@ -7,6 +7,7 @@ import {
   X,
   Mail,
   User,
+  Phone,
   ShieldCheck,
   MoreHorizontal
 } from 'lucide-react'
@@ -17,6 +18,7 @@ interface Driver {
   id: string
   full_name: string
   email: string
+  phone_number?: string
   status: string
   updated_at: string
 }
@@ -30,6 +32,7 @@ const DriverRoster: React.FC = () => {
   // Form state
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
+  const [phoneNumber, setPhoneNumber] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   const fetchDrivers = async () => {
@@ -70,6 +73,7 @@ const DriverRoster: React.FC = () => {
         id: newDriverId,
         full_name: fullName,
         email: email,
+        phone_number: phoneNumber || null,
         status: 'Off Duty'
       }])
 
@@ -79,6 +83,7 @@ const DriverRoster: React.FC = () => {
       setIsModalOpen(false)
       setFullName('')
       setEmail('')
+      setPhoneNumber('')
     } catch (err) {
       console.error('Error adding driver:', err)
       showToast('Failed to onboard driver')
@@ -152,7 +157,7 @@ const DriverRoster: React.FC = () => {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
-                  {['Driver Name', 'Email Address', 'Current Status', 'Last Updated', ''].map(h => (
+                  {['Driver Name', 'Contact Info', 'Current Status', 'Last Updated', ''].map(h => (
                     <th key={h} className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-6 py-3 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -169,9 +174,17 @@ const DriverRoster: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-                        <Mail size={12} className="opacity-70" />
-                        <span className="text-xs">{driver.email}</span>
+                      <div className="flex flex-col gap-1 text-slate-500 dark:text-slate-400">
+                        <div className="flex items-center gap-2">
+                          <Mail size={12} className="opacity-70" />
+                          <span className="text-xs">{driver.email}</span>
+                        </div>
+                        {driver.phone_number && (
+                          <div className="flex items-center gap-2">
+                            <Phone size={12} className="opacity-70" />
+                            <span className="text-xs">{driver.phone_number}</span>
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -261,6 +274,20 @@ const DriverRoster: React.FC = () => {
                     placeholder="john@cargonode.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 ml-1">Phone Number (Optional)</label>
+                <div className="relative">
+                  <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="tel"
+                    placeholder="+639171234567"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
                   />
                 </div>
