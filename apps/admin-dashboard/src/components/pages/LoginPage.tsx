@@ -77,19 +77,45 @@ const LoginPage: React.FC = () => {
 
         {/* Card Container Restraint */}
         <div className="max-w-md w-full relative z-10">
-          <div className="w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 p-8 sm:p-10 rounded-3xl shadow-2xl shadow-slate-200/50 dark:shadow-black/50 relative">
-            
-            <div className="flex flex-col items-center justify-center mb-10 gap-4">
-              <div className="flex justify-center">
-                <img src="/SecondaryLogoForLightMode.png" alt="Quantevo Secondary Logo" className="h-16 object-contain block dark:hidden" />
-                <img src="/SecondaryLogoForDarkMode.png" alt="Quantevo Secondary Logo" className="h-16 object-contain hidden dark:block" />
+          
+          {/* Logo Outside the Box */}
+          <div className="flex flex-col items-center justify-center mb-8 gap-4 mt-6">
+            <div className="relative group flex justify-center items-center w-28 h-28">
+              {/* Animated glowing backdrop */}
+              <div className="absolute inset-0 bg-blue-500/20 dark:bg-blue-400/20 blur-2xl rounded-full group-hover:bg-blue-500/30 transition-colors duration-500"></div>
+              
+              {/* Static Inner Ring */}
+              <div className="absolute inset-[-8px] rounded-full border border-blue-500/20 dark:border-blue-400/20 group-hover:border-blue-500/40 transition-colors duration-500"></div>
+              
+              {/* Outer Dashed Spinning Ring */}
+              <div className="absolute inset-[-20px] rounded-full border border-dashed border-blue-400/40 dark:border-blue-500/40 animate-[spin_15s_linear_infinite]"></div>
+              
+              {/* Reverse Spinning Subtle Ring */}
+              <div className="absolute inset-[-32px] rounded-full border border-purple-500/10 dark:border-purple-400/20 animate-[spin_20s_linear_infinite_reverse]"></div>
+              
+              {/* Fast Orbiting Dot on Inner Ring */}
+              <div className="absolute inset-[-8px] animate-[spin_3s_linear_infinite]">
+                <div className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full absolute -top-[1px] left-1/2 -translate-x-1/2 shadow-[0_0_10px_2px_rgba(59,130,246,0.8)]"></div>
+              </div>
+
+              {/* Slower Orbiting Dot on Outer Ring */}
+              <div className="absolute inset-[-32px] animate-[spin_6s_linear_infinite_reverse]">
+                <div className="w-1.5 h-1.5 bg-purple-500 dark:bg-purple-400 rounded-full absolute top-1/2 -left-[1px] -translate-y-1/2 shadow-[0_0_8px_2px_rgba(168,85,247,0.8)]"></div>
+              </div>
+              
+              {/* Logo (No box) */}
+              <div className="relative z-10 group-hover:scale-110 transition-transform duration-500">
+                <img src="/SubmarkLogo.png" alt="CargoNode Logo" className="h-24 w-24 object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
               </div>
             </div>
+          </div>
+
+          <div className="w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 p-8 sm:p-10 rounded-3xl shadow-2xl shadow-slate-200/50 dark:shadow-black/50 relative">
 
           <div className="relative overflow-hidden min-h-[400px]">
             {/* --- VIEW: LOGIN --- */}
             <div className={`transition-all duration-500 absolute w-full ${view === 'login' ? 'opacity-100 translate-x-0 relative' : 'opacity-0 -translate-x-full absolute pointer-events-none'}`}>
-              <div className="mb-8">
+              <div className="mb-8 text-center flex flex-col items-center">
                 <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">Welcome back</h2>
                 <p className="text-slate-500 dark:text-slate-400">Sign in to your workspace to continue.</p>
               </div>
@@ -159,10 +185,10 @@ const LoginPage: React.FC = () => {
 
             {/* --- VIEW: FORGOT PASSWORD --- */}
             <div className={`transition-all duration-500 absolute w-full ${view === 'forgot_password' ? 'opacity-100 translate-x-0 relative' : 'opacity-0 translate-x-full absolute pointer-events-none'}`}>
-              <div className="mb-8">
+              <div className="mb-8 text-center flex flex-col items-center">
                 <button 
                   onClick={() => { setView('login'); setError(null); }}
-                  className="mb-4 text-sm font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors flex items-center gap-1 group w-fit"
+                  className="mb-4 text-sm font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors flex items-center justify-center gap-1 group w-fit"
                 >
                   <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                   Back to login
