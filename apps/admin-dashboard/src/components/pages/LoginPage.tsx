@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { Loader2, AlertCircle, ArrowLeft, CheckCircle2, Eye, EyeOff, Activity, Truck, MapPin, Signal } from 'lucide-react'
+import { Loader2, AlertCircle, ArrowLeft, CheckCircle2, Eye, EyeOff } from 'lucide-react'
 
 type ViewState = 'login' | 'forgot_password' | 'reset_sent'
 
