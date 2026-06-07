@@ -41,7 +41,9 @@ const registerSchema = z.object({
   contactPerson: z.string().min(2, "Contact person must be at least 2 characters"),
   phoneNumber: z.string().regex(/^\+?[\d\s-]{8,}$/, "Invalid phone number"),
   defaultAddress: z.string().min(10, "Address must be at least 10 characters"),
-  agreeToTerms: z.literal(true, { errorMap: () => ({ message: "You must agree to the Terms of Service and Privacy Policy" }) })
+  agreeToTerms: z.literal(true, {
+    message: "You must agree to the Terms of Service and Privacy Policy"
+  })
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
