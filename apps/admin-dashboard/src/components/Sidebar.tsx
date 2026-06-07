@@ -6,17 +6,13 @@ import {
   BarChart3,
   X,
   ChevronRight,
-  ChevronLeft,
   Truck,
   Package2,
-  Settings,
-  HelpCircle,
   LogOut,
   MonitorDot,
   PenTool,
   ClipboardList,
   Users,
-  SunMoon,
 } from 'lucide-react'
 import type { NavItem } from '../App'
 import { useAuth } from '../contexts/AuthContext'
