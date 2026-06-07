@@ -501,23 +501,26 @@ function App() {
   // RENDER SECURITY GATE: Sign-In / Registration Screen
   if (!user) {
     return (
-      <main className="min-h-screen w-full flex flex-col items-center justify-center bg-[#060b13] relative overflow-hidden p-4">
+      <main className="min-h-screen w-full flex flex-col items-center justify-center bg-[#060b13] p-4 relative overflow-y-auto">
         {/* Subtle Background Grid */}
-        <div className="absolute inset-0 z-0 opacity-5" style={{ backgroundImage: 'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
+        <div className="absolute inset-0 z-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
         
         {/* Radial Glow Effect */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/5 blur-[130px] rounded-full pointer-events-none"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-blue-600/5 blur-[130px] pointer-events-none"></div>
 
         {/* Card Container Restraint */}
-        <div className="max-w-md w-full relative z-10">
-          <div className="w-full relative overflow-hidden bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-3xl p-6 sm:p-8 shadow-2xl dark:shadow-none">
-            <div className="flex flex-col items-center mb-8 gap-4">
-              <div className="flex justify-center">
-                <img src="/PrimaryLogoForLightMode.png" alt="CargoNode Primary Logo" className="h-16 object-contain block dark:hidden" />
-                <img src="/PrimaryLogoForDarkMode.png" alt="CargoNode Primary Logo" className="h-16 object-contain hidden dark:block" />
-              </div>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Client Portal PWA</p>
+        <div className="max-w-md w-full relative z-10 py-12 my-auto">
+          
+          {/* Logo Outside the Box */}
+          <div className="flex flex-col items-center mb-8 gap-3">
+            <div className="flex justify-center">
+              <img src="/PrimaryLogoForLightMode.png" alt="CargoNode Primary Logo" className="h-16 object-contain block dark:hidden" />
+              <img src="/PrimaryLogoForDarkMode.png" alt="CargoNode Primary Logo" className="h-16 object-contain hidden dark:block" />
             </div>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Client Portal</p>
+          </div>
+
+          <div className="w-full relative overflow-hidden bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-3xl p-6 sm:p-8 shadow-2xl dark:shadow-none">
 
             {/* Toggle Tabs */}
             <div className="flex gap-2 bg-white/5 rounded-2xl p-1 mb-6">
@@ -531,7 +534,7 @@ function App() {
                 onClick={() => { setAuthView('register'); setAuthError(''); }}
                 className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${authView === 'register' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25' : 'text-slate-400 hover:text-slate-200'}`}
               >
-                Register PWA
+                Register
               </button>
             </div>
 
