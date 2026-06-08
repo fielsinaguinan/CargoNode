@@ -19,7 +19,9 @@ const CAPACITY_MAP: Record<ContainerType, number> = {
 
 const CargoWaybillAllocator: React.FC = () => {
   const [clientName, setClientName] = useState('')
+  const [customClientName, setCustomClientName] = useState('')
   const [destination, setDestination] = useState('')
+  const [customDestination, setCustomDestination] = useState('')
   const [freightRate, setFreightRate] = useState('')
   const [selectedType, setSelectedType] = useState<ContainerType>('20-footer')
   const [items, setItems] = useState<AllocationItem[]>([])
@@ -64,7 +66,9 @@ const CargoWaybillAllocator: React.FC = () => {
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (items.length === 0 || isOverCapacity || !clientName || !destination || !selectedPrimeMover) return
+    const finalClientName = clientName === 'other' ? customClientName : clientName;
+    const finalDestination = destination === 'other' ? customDestination : destination;
+    if (items.length === 0 || isOverCapacity || !finalClientName || !finalDestination || !selectedPrimeMover) return
     setIsGenerating(true)
     
     try {
@@ -72,9 +76,9 @@ const CargoWaybillAllocator: React.FC = () => {
       
       const { error: waybillError } = await supabase.from('waybills').insert({
         tracking_number: trackingNumber,
-        client_name: clientName,
+        client_name: finalClientName,
         origin: 'Central Hub',
-        destination: destination,
+        destination: finalDestination,
         container_type: items[0].type,
         status: 'Loading',
         prime_mover_id: selectedPrimeMover,
@@ -98,7 +102,9 @@ const CargoWaybillAllocator: React.FC = () => {
       setTimeout(() => {
         setGenerated(false)
         setClientName('')
+        setCustomClientName('')
         setDestination('')
+        setCustomDestination('')
         setFreightRate('')
         setItems([])
       }, 3000)
@@ -130,22 +136,35 @@ const CargoWaybillAllocator: React.FC = () => {
             <form id="allocator-form" onSubmit={handleGenerate} className="space-y-6">
               
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider ml-1">Client Name</label>
-                <div className="relative">
-                   <select 
-                     value={clientName}
-                     onChange={(e) => setClientName(e.target.value)}
-                     className="w-full appearance-none bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm rounded-xl px-4 py-3 outline-none transition-all focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                   >
-                     <option value="" disabled>Select a client...</option>
-                     <option value="NexaCorp Logistics Inc.">NexaCorp Logistics Inc.</option>
-                     <option value="Global Freight Solutions">Global Freight Solutions</option>
-                     <option value="Apex Industrial Group">Apex Industrial Group</option>
-                     <option value="Prime Retail Distributors">Prime Retail Distributors</option>
-                   </select>
-                   <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 pointer-events-none" />
-                </div>
-              </div>
+                 <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider ml-1">Client Name</label>
+                 <div className="relative">
+                    <select 
+                      value={clientName}
+                      onChange={(e) => setClientName(e.target.value)}
+                      className="w-full appearance-none bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm rounded-xl px-4 py-3 outline-none transition-all focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                    >
+                      <option value="" disabled>Select a client...</option>
+                      <option value="NexaCorp Logistics Inc.">NexaCorp Logistics Inc.</option>
+                      <option value="Global Freight Solutions">Global Freight Solutions</option>
+                      <option value="Apex Industrial Group">Apex Industrial Group</option>
+                      <option value="Prime Retail Distributors">Prime Retail Distributors</option>
+                      <option value="other">+ Add New Client (Manual)</option>
+                    </select>
+                    <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 pointer-events-none" />
+                 </div>
+                 {clientName === 'other' && (
+                   <div className="mt-3 animate-fade-in-down">
+                     <input 
+                       type="text" 
+                       value={customClientName}
+                       onChange={(e) => setCustomClientName(e.target.value)}
+                       placeholder="Enter new client name..."
+                       className="w-full bg-slate-50 dark:bg-slate-950 border border-blue-200 dark:border-blue-900/50 text-slate-800 dark:text-slate-200 text-sm rounded-xl px-4 py-3 outline-none transition-all focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 placeholder-slate-400"
+                       autoFocus
+                     />
+                   </div>
+                 )}
+               </div>
 
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider ml-1">Destination Route</label>
@@ -162,9 +181,22 @@ const CargoWaybillAllocator: React.FC = () => {
                      <option value="Cavite Distribution Center">Cavite Distribution Center</option>
                      <option value="North Harbor Manila">North Harbor Manila</option>
                      <option value="Batangas Port">Batangas Port</option>
+                     <option value="other">+ Add New Destination (Manual)</option>
                    </select>
                    <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 pointer-events-none" />
                 </div>
+                {destination === 'other' && (
+                  <div className="mt-3 animate-fade-in-down">
+                    <input 
+                      type="text" 
+                      value={customDestination}
+                      onChange={(e) => setCustomDestination(e.target.value)}
+                      placeholder="Enter new destination route..."
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-blue-200 dark:border-blue-900/50 text-slate-800 dark:text-slate-200 text-sm rounded-xl px-4 py-3 outline-none transition-all focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 placeholder-slate-400"
+                      autoFocus
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -262,7 +294,7 @@ const CargoWaybillAllocator: React.FC = () => {
              <button 
                 type="submit"
                 form="allocator-form"
-                disabled={items.length === 0 || isOverCapacity || !clientName || !destination || !freightRate || !selectedPrimeMover || isGenerating || generated}
+                disabled={items.length === 0 || isOverCapacity || (clientName === 'other' ? !customClientName : !clientName) || (destination === 'other' ? !customDestination : !destination) || !freightRate || !selectedPrimeMover || isGenerating || generated}
                 className="w-full h-[52px] bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-600/20 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden relative"
              >
                 {isGenerating ? (
