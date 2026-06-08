@@ -132,13 +132,18 @@ const CargoWaybillAllocator: React.FC = () => {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider ml-1">Client Name</label>
                 <div className="relative">
-                   <input 
-                     type="text" 
+                   <select 
                      value={clientName}
                      onChange={(e) => setClientName(e.target.value)}
-                     placeholder="e.g. NexaCorp Logistics Inc."
-                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm rounded-xl px-4 py-3 outline-none transition-all focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 placeholder-slate-400"
-                   />
+                     className="w-full appearance-none bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm rounded-xl px-4 py-3 outline-none transition-all focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                   >
+                     <option value="" disabled>Select a client...</option>
+                     <option value="NexaCorp Logistics Inc.">NexaCorp Logistics Inc.</option>
+                     <option value="Global Freight Solutions">Global Freight Solutions</option>
+                     <option value="Apex Industrial Group">Apex Industrial Group</option>
+                     <option value="Prime Retail Distributors">Prime Retail Distributors</option>
+                   </select>
+                   <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 pointer-events-none" />
                 </div>
               </div>
 
@@ -146,13 +151,19 @@ const CargoWaybillAllocator: React.FC = () => {
                 <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider ml-1">Destination Route</label>
                 <div className="relative">
                    <MapPin size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-                   <input 
-                     type="text" 
+                   <select 
                      value={destination}
                      onChange={(e) => setDestination(e.target.value)}
-                     placeholder="e.g. Pier 4 to Laguna Warehouse"
-                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm rounded-xl pl-11 pr-4 py-3 outline-none transition-all focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 placeholder-slate-400"
-                   />
+                     className="w-full appearance-none bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm rounded-xl pl-11 pr-10 py-3 outline-none transition-all focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                   >
+                     <option value="" disabled>Select a destination...</option>
+                     <option value="Pier 4 Terminal">Pier 4 Terminal</option>
+                     <option value="Laguna Warehouse">Laguna Warehouse</option>
+                     <option value="Cavite Distribution Center">Cavite Distribution Center</option>
+                     <option value="North Harbor Manila">North Harbor Manila</option>
+                     <option value="Batangas Port">Batangas Port</option>
+                   </select>
+                   <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 pointer-events-none" />
                 </div>
               </div>
 

@@ -272,14 +272,21 @@ const FleetRegistry: React.FC = () => {
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 ml-1">Capacity / Class</label>
                 <div className="relative">
                   <Weight size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
+                  <select
                     required
-                    placeholder="e.g. 40-footer Chassis"
                     value={capacity}
                     onChange={(e) => setCapacity(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                  />
+                    className="w-full appearance-none pl-10 pr-10 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                  >
+                    <option value="" disabled>Select capacity class...</option>
+                    <option value="20-footer Chassis">20-footer Chassis</option>
+                    <option value="40-footer Chassis">40-footer Chassis</option>
+                    <option value="10-Wheeler Wing Van">10-Wheeler Wing Van</option>
+                    <option value="6-Wheeler Forward">6-Wheeler Forward</option>
+                  </select>
+                  <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400"><path d="m6 9 6 6 6-6"/></svg>
+                  </div>
                 </div>
               </div>
 

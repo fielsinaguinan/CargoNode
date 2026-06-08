@@ -268,14 +268,24 @@ const Maintenance: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wide">Service Required</label>
-                <input 
-                  required
-                  type="text"
-                  placeholder="e.g. Engine Oil Change"
-                  value={formData.alert_type}
-                  onChange={(e) => setFormData({ ...formData, alert_type: e.target.value })}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
-                />
+                <div className="relative">
+                  <select 
+                    required
+                    value={formData.alert_type}
+                    onChange={(e) => setFormData({ ...formData, alert_type: e.target.value })}
+                    className="w-full appearance-none bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 pr-10 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-800 dark:text-slate-200"
+                  >
+                    <option value="" disabled>Select service type...</option>
+                    <option value="Engine Oil Change">Engine Oil Change</option>
+                    <option value="Brake Pad Replacement">Brake Pad Replacement</option>
+                    <option value="Tire Rotation/Replacement">Tire Rotation/Replacement</option>
+                    <option value="Filter Replacement">Filter Replacement</option>
+                    <option value="General Preventive Maintenance">General Preventive Maintenance</option>
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400"><path d="m6 9 6 6 6-6"/></svg>
+                  </div>
+                </div>
               </div>
 
               <div>
