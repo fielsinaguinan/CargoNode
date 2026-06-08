@@ -7,6 +7,12 @@ import {
   ArrowDownRight,
   Activity,
   Map,
+  Download,
+  Trophy,
+  User,
+  Star,
+  ChevronDown,
+  FileText,
 } from 'lucide-react'
 import PageHeader from '../PageHeader'
 import { supabase } from '../../lib/supabase'
@@ -39,6 +45,7 @@ interface Waybill {
   status: string
   freight_rate: number
   created_at: string
+  prime_mover_id?: string
 }
 
 interface PrimeMover {
@@ -47,19 +54,30 @@ interface PrimeMover {
   fuel_allowance: number
 }
 
+interface Driver {
+  id: string
+  full_name: string
+  status: string
+  prime_mover_id?: string
+}
+
 
 const Analytics: React.FC = () => {
   const [period, setPeriod] = useState<'week' | 'month' | 'quarter'>('quarter')
+  const [isExportOpen, setIsExportOpen] = useState(false)
   
   const [waybills, setWaybills] = useState<Waybill[]>([])
   const [primeMovers, setPrimeMovers] = useState<PrimeMover[]>([])
+  const [drivers, setDrivers] = useState<Driver[]>([])
 
   const fetchAnalyticsData = async () => {
-    const { data: wData } = await supabase.from('waybills').select('tracking_number, origin, destination, status, freight_rate, created_at')
+    const { data: wData } = await supabase.from('waybills').select('tracking_number, origin, destination, status, freight_rate, created_at, prime_mover_id')
     const { data: pData } = await supabase.from('prime_movers').select('id, status, fuel_allowance')
+    const { data: dData } = await supabase.from('drivers').select('id, full_name, status, prime_mover_id')
     
     if (wData) setWaybills(wData as Waybill[])
     if (pData) setPrimeMovers(pData as PrimeMover[])
+    if (dData) setDrivers(dData as Driver[])
   }
 
   useEffect(() => {
@@ -75,12 +93,20 @@ const Analytics: React.FC = () => {
     }
   }, [])
 
-  // KPI Calculations
-  const grossRevenue = waybills.reduce((sum, w) => sum + (w.freight_rate || 0), 0)
+  // KPI Calculations based on period
+  const now = new Date()
+  let periodStart = new Date(now)
+  if (period === 'week') periodStart.setDate(now.getDate() - 7)
+  if (period === 'month') periodStart.setMonth(now.getMonth() - 1)
+  if (period === 'quarter') periodStart.setMonth(now.getMonth() - 3)
+
+  const activeWaybills = waybills.filter(w => new Date(w.created_at) >= periodStart)
+
+  const grossRevenue = activeWaybills.reduce((sum, w) => sum + (w.freight_rate || 0), 0)
   const activeFleet = primeMovers.filter(pm => pm.status === 'Active' || pm.status === 'Pier Standby')
   const totalFuelCost = activeFleet.reduce((sum, pm) => sum + (pm.fuel_allowance || 0), 0)
   const netProfit = grossRevenue - totalFuelCost
-  const deliveriesCompleted = waybills.filter(w => w.status === 'Delivered').length
+  const deliveriesCompleted = activeWaybills.filter(w => w.status === 'Delivered').length
 
   const formatCurrency = (val: number) => {
     if (val >= 1000000) return `₱${(val / 1000000).toFixed(2)}M`
@@ -135,46 +161,77 @@ const Analytics: React.FC = () => {
     },
   ]
 
-  // ── Live Weekly Chart Aggregation ────────────────────────────────────────
-  // Build 8 weekly buckets ending today, each 7 days wide.
-  const weeklyData = (() => {
-    const now = new Date()
+  // ── Dynamic Chart Aggregation ────────────────────────────────────────
+  const chartData = (() => {
     const buckets: { label: string; deliveries: number; revenue: number }[] = []
-    for (let weeksAgo = 7; weeksAgo >= 0; weeksAgo--) {
-      const end = new Date(now)
-      end.setDate(now.getDate() - weeksAgo * 7)
-      end.setHours(23, 59, 59, 999)
-      const start = new Date(end)
-      start.setDate(end.getDate() - 6)
-      start.setHours(0, 0, 0, 0)
-      const slice = waybills.filter(w => {
-        const d = new Date(w.created_at)
-        return d >= start && d <= end
-      })
-      buckets.push({
-        label: `W${8 - weeksAgo}`,
-        deliveries: slice.filter(w => w.status === 'Delivered').length,
-        revenue: slice.reduce((s, w) => s + (w.freight_rate || 0), 0) / 1_000_000,
-      })
+    
+    if (period === 'week') {
+      // 7 daily buckets
+      for (let daysAgo = 6; daysAgo >= 0; daysAgo--) {
+        const d = new Date(now)
+        d.setDate(now.getDate() - daysAgo)
+        const dateStr = d.toLocaleDateString('en-US', { weekday: 'short' })
+        d.setHours(0,0,0,0)
+        const end = new Date(d)
+        end.setHours(23,59,59,999)
+        const slice = waybills.filter(w => {
+           const time = new Date(w.created_at).getTime()
+           return time >= d.getTime() && time <= end.getTime()
+        })
+        buckets.push({
+          label: dateStr,
+          deliveries: slice.filter(w => w.status === 'Delivered').length,
+          revenue: slice.reduce((s, w) => s + (w.freight_rate || 0), 0) / 1_000_000,
+        })
+      }
+    } else {
+      // Weekly buckets (4 for month, 12 for quarter)
+      const numWeeks = period === 'month' ? 4 : 12
+      for (let weeksAgo = numWeeks - 1; weeksAgo >= 0; weeksAgo--) {
+        const end = new Date(now)
+        end.setDate(now.getDate() - weeksAgo * 7)
+        end.setHours(23, 59, 59, 999)
+        const start = new Date(end)
+        start.setDate(end.getDate() - 6)
+        start.setHours(0, 0, 0, 0)
+        const slice = waybills.filter(w => {
+          const time = new Date(w.created_at).getTime()
+          return time >= start.getTime() && time <= end.getTime()
+        })
+        buckets.push({
+          label: `W${numWeeks - weeksAgo}`,
+          deliveries: slice.filter(w => w.status === 'Delivered').length,
+          revenue: slice.reduce((s, w) => s + (w.freight_rate || 0), 0) / 1_000_000,
+        })
+      }
     }
     return buckets
   })()
 
-  const weekLabels   = weeklyData.map(b => b.label)
-  const deliveries   = weeklyData.map(b => b.deliveries)
-  const revenue      = weeklyData.map(b => b.revenue)
+  const chartLabels  = chartData.map(b => b.label)
+  const deliveries   = chartData.map(b => b.deliveries)
+  const revenue      = chartData.map(b => b.revenue)
 
   // ── Live On-Time Rate ──────────────────────────────────────────────────────
-  const deliveredCount  = waybills.filter(w => w.status === 'Delivered').length
-  const delayedCount    = waybills.filter(w => w.status === 'Delayed').length
+  const deliveredCount  = activeWaybills.filter(w => w.status === 'Delivered').length
+  const delayedCount    = activeWaybills.filter(w => w.status === 'Delayed').length
   const closedTotal     = deliveredCount + delayedCount
   const onTimeRate      = closedTotal > 0 ? (deliveredCount / closedTotal) * 100 : 0
-  // Approximate split: 70% of delays are 'late (<2h)', 30% 'very late'
   const lateRate        = closedTotal > 0 ? (delayedCount / closedTotal) * 70 : 0
   const veryLateRate    = closedTotal > 0 ? (delayedCount / closedTotal) * 30 : 0
 
-  // ── Live Top Routes (already computed above, no fallback to mock) ──────────
-  const routeMap = waybills.reduce((acc, w) => {
+  // ── Fleet Utilization ──────────────────────────────────────────────────────
+  const totalFleetCount = primeMovers.length
+  const activeFleetCount = activeFleet.length
+  const idleFleetCount = primeMovers.filter(pm => pm.status === 'Idle' || pm.status === 'Garage').length
+  const maintenanceFleetCount = primeMovers.filter(pm => pm.status === 'Maintenance').length
+  
+  const utilizationRate = totalFleetCount > 0 ? (activeFleetCount / totalFleetCount) * 100 : 0
+  const idleRate = totalFleetCount > 0 ? (idleFleetCount / totalFleetCount) * 100 : 0
+  const maintenanceRate = totalFleetCount > 0 ? (maintenanceFleetCount / totalFleetCount) * 100 : 0
+
+  // ── Live Top Routes ────────────────────────────────────────────────────────
+  const routeMap = activeWaybills.reduce((acc, w) => {
     const route = `${w.origin} → ${w.destination}`
     if (!acc[route]) acc[route] = { volume: 0, revenue: 0 }
     acc[route].volume += 1
@@ -188,11 +245,138 @@ const Analytics: React.FC = () => {
     .map(([route, data]) => ({
       route,
       volume: `${data.volume} trips`,
-      share: Math.min(100, (data.volume / (waybills.length || 1)) * 100),
+      share: Math.min(100, (data.volume / (activeWaybills.length || 1)) * 100),
       revenue: formatCurrency(data.revenue),
     }))
 
   const displayRoutes = dynamicTopRoutes
+
+  // ── Live Driver Leaderboard ───────────────────────────────────────────────
+  const driverLeaderboard = drivers.map((d) => {
+    // Find all active waybills assigned to this driver's truck
+    const driverWaybills = activeWaybills.filter(w => w.prime_mover_id === d.prime_mover_id)
+    
+    const completedTrips = driverWaybills.filter(w => w.status === 'Delivered').length
+    const delayedTrips = driverWaybills.filter(w => w.status === 'Delayed').length
+    const totalClosed = completedTrips + delayedTrips
+    
+    // Calculate rating based on on-time delivery rate (0 if no closed trips, otherwise scales from 3.5 to 5.0)
+    const onTimeRate = totalClosed > 0 ? (completedTrips / totalClosed) : 0
+    const rating = totalClosed === 0 ? 0 : (3.5 + (onTimeRate * 1.5))
+    
+    return {
+      id: d.id,
+      name: d.full_name,
+      trips: completedTrips,
+      rating: parseFloat(rating.toFixed(1)),
+      status: d.status
+    }
+  }).sort((a, b) => b.trips - a.trips).slice(0, 5)
+
+  const handleExportCSV = () => {
+    setIsExportOpen(false)
+    const summaryLines = [
+      '--- CARGONODE EXECUTIVE SUMMARY ---',
+      `Report Period:,${period.toUpperCase()}`,
+      `Total Revenue:,${formatCurrency(grossRevenue)}`,
+      `Deliveries Completed:,${deliveriesCompleted}`,
+      `Fleet Utilization:,${utilizationRate.toFixed(1)}% Active`,
+      '',
+      '--- DETAILED SHIPMENT LOG ---'
+    ]
+
+    const headers = ['Tracking Number', 'Origin', 'Destination', 'Status', 'Freight Rate', 'Date', 'Prime Mover ID', 'Driver Name']
+    const rows = activeWaybills.map(w => {
+      const driver = drivers.find(d => d.prime_mover_id === w.prime_mover_id)
+      const driverName = driver ? driver.full_name : 'Unassigned'
+      return [
+        w.tracking_number,
+        `"${w.origin}"`,
+        `"${w.destination}"`,
+        w.status,
+        w.freight_rate || 0,
+        new Date(w.created_at).toLocaleDateString(),
+        w.prime_mover_id || 'N/A',
+        `"${driverName}"`
+      ]
+    })
+    
+    const csvContent = [...summaryLines, headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.setAttribute('href', url)
+    link.setAttribute('download', `analytics_report_${period}_${new Date().toISOString().split('T')[0]}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const handleExportPDF = async () => {
+    setIsExportOpen(false)
+    const { default: jsPDF } = await import('jspdf')
+    const { default: autoTable } = await import('jspdf-autotable')
+    
+    const doc = new jsPDF()
+    
+    // Dark Header Background
+    doc.setFillColor(15, 23, 42) // slate-900
+    doc.rect(0, 0, 210, 45, 'F')
+    
+    // Load Logo
+    const img = new Image()
+    img.src = '/SecondaryLogoForDarkMode.png'
+    await new Promise((resolve) => {
+      img.onload = resolve
+      img.onerror = resolve
+    })
+    
+    try {
+      const w = (img.width / img.height) * 12
+      doc.addImage(img, 'PNG', 14, 12, w, 12)
+    } catch(e) {
+      console.error('Failed to load logo for PDF', e)
+    }
+    
+    // Title
+    doc.setFontSize(22)
+    doc.setTextColor(255, 255, 255) // white
+    doc.text('Analytics Report', 14, 35)
+    
+    // Summary
+    doc.setFontSize(10)
+    doc.setTextColor(100, 116, 139) // slate-500
+    doc.text(`Period: ${period.toUpperCase()}`, 14, 55)
+    doc.text(`Total Revenue: ${formatCurrency(grossRevenue)}`, 14, 61)
+    doc.text(`Deliveries Completed: ${deliveriesCompleted}`, 14, 67)
+    doc.text(`Fleet Utilization: ${utilizationRate.toFixed(1)}% Active`, 14, 73)
+    
+    // Table
+    const headers = [['Tracking Number', 'Route', 'Status', 'Rate', 'Asset', 'Driver']]
+    const data = activeWaybills.map(w => {
+      const driver = drivers.find(d => d.prime_mover_id === w.prime_mover_id)
+      const driverName = driver ? driver.full_name : 'Unassigned'
+      return [
+        w.tracking_number,
+        `${w.origin} to ${w.destination}`,
+        w.status,
+        `PHP ${w.freight_rate || 0}`,
+        w.prime_mover_id || 'N/A',
+        driverName
+      ]
+    })
+    
+    autoTable(doc, {
+      head: headers,
+      body: data,
+      startY: 82,
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: [59, 130, 246] }
+    })
+    
+    doc.save(`analytics_report_${period}_${new Date().toISOString().split('T')[0]}.pdf`)
+  }
 
   return (
     <div className="space-y-7">
@@ -200,19 +384,53 @@ const Analytics: React.FC = () => {
         title="Analytics"
         subtitle="Performance metrics, revenue trends and operational KPIs"
         actions={
-          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
-            {(['week', 'month', 'quarter'] as const).map((p) => (
+          <div className="flex items-center gap-3">
+            <div className="relative">
               <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={[
-                  'px-4 py-1.5 rounded-lg text-xs font-medium capitalize transition-all duration-150',
-                  period === p ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700',
-                ].join(' ')}
+                onClick={() => setIsExportOpen(!isExportOpen)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               >
-                {p}
+                <Download size={16} />
+                Export Report
+                <ChevronDown size={14} className={`text-slate-400 transition-transform ${isExportOpen ? 'rotate-180' : ''}`} />
               </button>
-            ))}
+              
+              {isExportOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsExportOpen(false)} />
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl z-50 overflow-hidden animate-fade-in-down">
+                    <button 
+                      onClick={handleExportCSV}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
+                    >
+                      <Download size={16} className="text-emerald-500" />
+                      Download CSV Data
+                    </button>
+                    <button 
+                      onClick={handleExportPDF}
+                      className="w-full flex items-center gap-2 px-4 py-3 border-t border-slate-100 dark:border-slate-800 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
+                    >
+                      <FileText size={16} className="text-blue-500" />
+                      Download PDF Report
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
+              {(['week', 'month', 'quarter'] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  className={[
+                    'px-4 py-1.5 rounded-lg text-xs font-medium capitalize transition-all duration-150',
+                    period === p ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700',
+                  ].join(' ')}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
           </div>
         }
       />
@@ -246,19 +464,19 @@ const Analytics: React.FC = () => {
       </div>
 
       {/* Charts row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
 
         {/* Delivery volume bar chart */}
         <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 card-hover">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Weekly Delivery Volume</h3>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Total completed deliveries per week</p>
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Delivery Volume</h3>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Total completed deliveries over time</p>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-sm bg-blue-500 opacity-35" />
               <span className="w-2.5 h-2.5 rounded-sm bg-blue-500" />
-              <span className="text-xs text-slate-400 dark:text-slate-500">Last 8 weeks</span>
+              <span className="text-xs text-slate-400 dark:text-slate-500 capitalize">This {period}</span>
             </div>
           </div>
 
@@ -286,7 +504,7 @@ const Analytics: React.FC = () => {
                     />
                     {/* Label */}
                     <text x={x + barW / 2} y={160} textAnchor="middle" fill="#94a3b8" fontSize="11">
-                      {weekLabels[i]}
+                      {chartLabels[i]}
                     </text>
                     {/* Value on top */}
                     {i === deliveries.length - 1 && (
@@ -358,10 +576,76 @@ const Analytics: React.FC = () => {
             ))}
           </div>
         </div>
+
+        {/* Fleet Utilization Rate donut */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 card-hover flex flex-col">
+          <div className="mb-5">
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Fleet Utilization</h3>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Real-time active fleet</p>
+          </div>
+
+          <div className="flex items-center justify-center flex-1 my-4">
+            <div className="relative">
+              <svg viewBox="0 0 120 120" className="w-36 h-36" style={{ transform: 'rotate(-90deg)' }}>
+                {/* BG ring */}
+                <circle cx="60" cy="60" r="46" fill="none" stroke="#f1f5f9" strokeWidth="12" />
+                {/* Progress ring - Active */}
+                <circle
+                  cx="60" cy="60" r="46"
+                  fill="none"
+                  stroke="#3b82f6"
+                  strokeWidth="12"
+                  strokeLinecap="round"
+                  strokeDasharray={`${(utilizationRate / 100) * 2 * Math.PI * 46} ${2 * Math.PI * 46}`}
+                />
+                {/* Secondary arc - Idle */}
+                <circle
+                  cx="60" cy="60" r="34"
+                  fill="none"
+                  stroke="#94a3b8"
+                  strokeWidth="8"
+                  strokeLinecap="round"
+                  strokeDasharray={`${(idleRate / 100) * 2 * Math.PI * 34} ${2 * Math.PI * 34}`}
+                />
+                {/* Tertiary arc - Maintenance */}
+                <circle
+                  cx="60" cy="60" r="22"
+                  fill="none"
+                  stroke="#ef4444"
+                  strokeWidth="6"
+                  strokeLinecap="round"
+                  strokeDasharray={`${(maintenanceRate / 100) * 2 * Math.PI * 22} ${2 * Math.PI * 22}`}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-2xl font-bold text-slate-900 dark:text-slate-50 font-[Plus_Jakarta_Sans,sans-serif]">
+                  {totalFleetCount > 0 ? `${utilizationRate.toFixed(1)}%` : 'N/A'}
+                </span>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500">Active</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2.5 mt-auto">
+            {[
+              { label: 'Active',      pct: utilizationRate, color: 'bg-blue-500' },
+              { label: 'Idle',        pct: idleRate,        color: 'bg-slate-400' },
+              { label: 'Maintenance', pct: maintenanceRate, color: 'bg-red-500' },
+            ].map((s) => (
+              <div key={s.label} className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-sm ${s.color}`} />
+                  <span className="text-slate-500 dark:text-slate-400">{s.label}</span>
+                </div>
+                <span className="font-semibold text-slate-700 dark:text-slate-300">{s.pct.toFixed(1)}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Top routes & performance table */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      {/* Bottom Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
         {/* Top routes */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden card-hover">
@@ -401,6 +685,53 @@ const Analytics: React.FC = () => {
           <div className="px-6 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
             <button className="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors">
               View all routes <ArrowUpRight size={11} />
+            </button>
+          </div>
+        </div>
+
+        {/* Driver Leaderboard */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden card-hover flex flex-col">
+          <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Top Drivers</h3>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">By completed trips</p>
+            </div>
+            <Trophy size={15} className="text-amber-500" />
+          </div>
+          <div className="divide-y divide-slate-50 dark:divide-slate-800/50 flex-1">
+            {driverLeaderboard.map((d, i) => (
+              <div key={d.id} className="px-6 py-3.5 hover:bg-slate-50/60 dark:hover:bg-slate-800/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400">
+                        <User size={14} />
+                      </div>
+                      {i < 3 && (
+                        <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white ${i === 0 ? 'bg-amber-400' : i === 1 ? 'bg-slate-400' : 'bg-amber-700'}`}>
+                          {i + 1}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">{d.name}</p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <Star size={10} className="text-amber-400 fill-amber-400" />
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400">{d.rating}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{d.trips}</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500">trips</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="px-6 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 mt-auto">
+            <button className="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors">
+              View roster <ArrowUpRight size={11} />
             </button>
           </div>
         </div>
@@ -465,8 +796,8 @@ const Analytics: React.FC = () => {
                 )
               })()}
               {/* X axis labels */}
-              {weekLabels.map((w, i) => {
-                const x = (i / (weekLabels.length - 1)) * 460 + 10
+              {chartLabels.map((w, i) => {
+                const x = (i / (chartLabels.length - 1)) * 460 + 10
                 return (
                   <text key={w} x={x} y={138} textAnchor="middle" fill="#94a3b8" fontSize="10">
                     {w}
@@ -481,8 +812,8 @@ const Analytics: React.FC = () => {
             <div className="text-center">
               <p className="text-xs text-slate-400 dark:text-slate-500">Peak Week</p>
               <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-0.5">
-                {weeklyData.length > 0
-                  ? `${weeklyData.reduce((best, w) => w.revenue > best.revenue ? w : best, weeklyData[0]).label} · ${formatCurrency(weeklyData.reduce((best, w) => w.revenue > best.revenue ? w : best, weeklyData[0]).revenue * 1_000_000)}`
+                {chartData.length > 0
+                  ? `${chartData.reduce((best, w) => w.revenue > best.revenue ? w : best, chartData[0]).label} · ${formatCurrency(chartData.reduce((best, w) => w.revenue > best.revenue ? w : best, chartData[0]).revenue * 1_000_000)}`
                   : 'No data'}
               </p>
             </div>
