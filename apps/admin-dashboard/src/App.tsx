@@ -7,7 +7,7 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import LoginPage from './components/pages/LoginPage'
 import { useAuth } from './contexts/AuthContext'
 
-export type NavItem = 'dispatch' | 'waybills' | 'allocator' | 'bookings' | 'maintenance' | 'analytics' | 'fleet-monitor' | 'profile' | 'settings' | 'preferences' | 'inventory' | 'help' | 'driver-roster' | 'fleet-registry'
+export type NavItem = 'dispatch' | 'waybills' | 'allocator' | 'bookings' | 'billing' | 'maintenance' | 'analytics' | 'fleet-monitor' | 'profile' | 'settings' | 'preferences' | 'inventory' | 'help' | 'driver-roster' | 'fleet-registry'
 
 const DashboardLayout: React.FC = () => {
   const { userRole } = useAuth()

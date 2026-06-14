@@ -13,6 +13,7 @@ import {
   PenTool,
   ClipboardList,
   Users,
+  CreditCard,
 } from 'lucide-react'
 import type { NavItem } from '../App'
 import { useAuth } from '../contexts/AuthContext'
@@ -69,6 +70,11 @@ const getNavGroups = (activeWaybills: number, delayedWaybills: number, pendingBo
           icon: <ClipboardList size={17} strokeWidth={1.8} />,
           badge: pendingBookingsCount > 0 ? String(pendingBookingsCount) : undefined,
           badgeColor: 'bg-amber-500',
+        },
+        {
+          id: 'billing',
+          label: 'Billing & Invoices',
+          icon: <CreditCard size={17} strokeWidth={1.8} />,
         },
       ],
     },

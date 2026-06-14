@@ -14,6 +14,7 @@ import Help from './pages/Help'
 import DriverRoster from './pages/DriverRoster'
 import FleetRegistry from './pages/FleetRegistry'
 import Preferences from './pages/Preferences'
+import Billing from './pages/Billing'
 import { useAuth } from '../contexts/AuthContext'
 import { ShieldAlert } from 'lucide-react'
 
@@ -37,8 +38,8 @@ const DashboardCanvas: React.FC<DashboardCanvasProps> = ({ activeNav, setActiveN
 
   const renderPage = () => {
     // RBAC Guardrail
-    const adminRestrictedModules = ['analytics', 'driver-roster', 'fleet-registry', 'settings']
-    const opsRestrictedModules = ['dispatch', 'waybills', 'allocator', 'bookings', 'inventory']
+    const adminRestrictedModules = ['analytics', 'driver-roster', 'fleet-registry', 'settings', 'billing']
+    const opsRestrictedModules = ['dispatch', 'waybills', 'allocator', 'bookings', 'inventory', 'billing']
     
     let isRestricted = false
 
@@ -57,6 +58,7 @@ const DashboardCanvas: React.FC<DashboardCanvasProps> = ({ activeNav, setActiveN
       case 'waybills':      return <CargoWaybills setActiveNav={setActiveNav} />
       case 'allocator':     return <CargoWaybillAllocator />
       case 'bookings':      return <PendingBookings />
+      case 'billing':       return <Billing />
       case 'maintenance':   return <Maintenance />
       case 'analytics':     return <Analytics />
       case 'fleet-monitor': return <FleetDispatchMonitor setActiveNav={setActiveNav} />

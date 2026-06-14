@@ -20,7 +20,9 @@ import {
   Moon,
   Monitor,
   User,
-  X
+  X,
+  CreditCard,
+  UploadCloud
 } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { z } from 'zod'
@@ -85,7 +87,7 @@ function App() {
   const [profileLoading, setProfileLoading] = useState(false)
 
   // Portal view state
-  const [activeTab, setActiveTab] = useState<'track' | 'book' | 'support' | 'settings'>('track')
+  const [activeTab, setActiveTab] = useState<'track' | 'book' | 'billing' | 'support' | 'settings'>('track')
   const [trackingNumber, setTrackingNumber] = useState('')
   const [isSearching, setIsSearching] = useState(false)
   const [result, setResult] = useState<{ waybill: any, milestones: any[] } | null>(null)
@@ -115,6 +117,58 @@ function App() {
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [profileSaveSuccess, setProfileSaveSuccess] = useState(false)
   const [profileSaveError, setProfileSaveError] = useState('')
+
+  // Billing & Invoices State
+  const [invoices, setInvoices] = useState<any[]>([])
+  const [invoicesLoading, setInvoicesLoading] = useState(false)
+  const [uploadingInvoiceId, setUploadingInvoiceId] = useState<string | null>(null)
+
+  // Fetch invoices
+  useEffect(() => {
+    if (user && activeTab === 'billing') {
+      setInvoicesLoading(true)
+      supabase.from('invoices')
+        .select('*')
+        .eq('client_id', user.id)
+        .order('created_at', { ascending: false })
+        .then(({ data, error }) => {
+          if (data && !error) setInvoices(data)
+          setInvoicesLoading(false)
+        })
+    }
+  }, [user, activeTab])
+
+  const handleUploadProof = async (invoiceId: string, file: File) => {
+    if (!user) return
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File size exceeds 5MB limit.")
+      return
+    }
+    setUploadingInvoiceId(invoiceId)
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${user.id}/${invoiceId}-${Date.now()}.${fileExt}`
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('payment_proofs')
+        .upload(fileName, file)
+
+      if (uploadError) throw uploadError
+
+      const { error: updateError } = await supabase.from('invoices')
+        .update({ proof_url: uploadData.path, status: 'Under Review' })
+        .eq('id', invoiceId)
+
+      if (updateError) throw updateError
+
+      setInvoices(prev => prev.map(inv => inv.id === invoiceId ? { ...inv, proof_url: uploadData.path, status: 'Under Review' } : inv))
+    } catch (err: any) {
+      console.error(err)
+      alert(err.message || "Failed to upload proof")
+    } finally {
+      setUploadingInvoiceId(null)
+    }
+  }
 
   // Sync profile form when modal opens
   useEffect(() => {
@@ -770,7 +824,7 @@ function App() {
           
           {/* Tab Switcher */}
           <div className="sticky top-4 z-40 flex justify-center mb-6 pointer-events-none">
-            <div className="flex gap-1 bg-white/60 dark:bg-slate-800/60 backdrop-blur-2xl rounded-full p-1.5 border border-white dark:border-slate-600/50 shadow-lg shadow-slate-200/50 dark:shadow-none w-full max-w-[280px] pointer-events-auto">
+            <div className="flex gap-1 bg-white/60 dark:bg-slate-800/60 backdrop-blur-2xl rounded-full p-1.5 border border-white dark:border-slate-600/50 shadow-lg shadow-slate-200/50 dark:shadow-none w-full max-w-[380px] pointer-events-auto">
               <button
                 onClick={() => { setActiveTab('track'); setResult(null); setError(''); }}
                 className={[
@@ -794,6 +848,18 @@ function App() {
               >
                 <Ship size={14} />
                 Book
+              </button>
+              <button
+                onClick={() => { setActiveTab('billing'); setResult(null); setError(''); }}
+                className={[
+                  'flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-xs font-bold transition-all duration-300 cursor-pointer',
+                  activeTab === 'billing'
+                    ? 'bg-white dark:bg-slate-700 text-primary shadow-md dark:shadow-none'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200',
+                ].join(' ')}
+              >
+                <CreditCard size={14} />
+                Billing
               </button>
             </div>
           </div>
@@ -1102,6 +1168,113 @@ function App() {
                 )}
               </button>
             </form>
+          </div>
+        )}
+
+        {/* ═══════════════ BILLING & INVOICES TAB ═══════════════ */}
+        {activeTab === 'billing' && (
+          <div className="mb-8 bg-white/80 dark:bg-slate-900/40 backdrop-blur-xl border border-white/60 dark:border-slate-700/50 shadow-2xl dark:shadow-none rounded-2xl p-6 sm:p-8 relative z-10 animate-fade-in-up">
+            <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-2 font-display tracking-tight flex items-center gap-2">
+              <CreditCard size={24} className="text-primary" /> Billing & Invoices
+            </h2>
+            <p className="text-xs text-slate-500 mb-8">Manage your corporate accounts and submit proof of payments via bank transfer.</p>
+
+            {invoicesLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 size={24} className="animate-spin text-slate-400" />
+              </div>
+            ) : invoices.length === 0 ? (
+              <div className="text-center py-12 bg-white/50 dark:bg-black/10 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+                <CreditCard size={32} className="mx-auto mb-3 text-slate-300 dark:text-slate-600" />
+                <p className="text-sm font-bold text-slate-500">No Invoices Found</p>
+                <p className="text-xs text-slate-400 mt-1">You currently have no pending or past invoices.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {invoices.map((invoice) => (
+                  <div key={invoice.id} className="bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700/50 pb-4 mb-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-sm font-bold text-slate-800 dark:text-white font-mono tracking-tight">{invoice.invoice_number}</p>
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                            invoice.status === 'Paid' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' :
+                            invoice.status === 'Under Review' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400' :
+                            invoice.status === 'Overdue' ? 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400' :
+                            'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'
+                          }`}>
+                            {invoice.status}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-medium">Issued: {new Date(invoice.created_at).toLocaleDateString()} {invoice.due_date && `| Due: ${new Date(invoice.due_date).toLocaleDateString()}`}</p>
+                      </div>
+                      <div className="text-left md:text-right">
+                        <p className="text-sm text-slate-500 font-medium">{invoice.currency}</p>
+                        <p className="text-xl font-bold text-slate-800 dark:text-white">{Number(invoice.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                      </div>
+                    </div>
+
+                    {(invoice.status === 'Pending' || invoice.status === 'Rejected') ? (
+                      <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700/30">
+                        <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Bank Transfer Details</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+                          <div>
+                            <p className="text-[10px] text-slate-400 font-semibold mb-0.5">Bank Name</p>
+                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">BDO Unibank, Inc.</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-slate-400 font-semibold mb-0.5">Account Name</p>
+                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">CargoNode Logistics Inc.</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-slate-400 font-semibold mb-0.5">Account Number</p>
+                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300 font-mono">0012-3456-7890</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-slate-400 font-semibold mb-0.5">SWIFT / BIC Code</p>
+                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300 font-mono">BNORPHMM</p>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-slate-200 dark:border-slate-700/50 pt-4">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                            <UploadCloud size={14} /> Upload Proof of Payment (PDF/JPG/PNG, Max 5MB)
+                          </label>
+                          <input
+                            type="file"
+                            accept=".pdf,image/png,image/jpeg"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                handleUploadProof(invoice.id, e.target.files[0]);
+                              }
+                            }}
+                            disabled={uploadingInvoiceId === invoice.id}
+                            className="block w-full text-xs text-slate-500 dark:text-slate-400
+                              file:mr-4 file:py-2.5 file:px-4
+                              file:rounded-xl file:border-0
+                              file:text-xs file:font-bold
+                              file:bg-primary/10 file:text-primary
+                              hover:file:bg-primary/20 file:cursor-pointer file:transition-colors disabled:opacity-50"
+                          />
+                          {uploadingInvoiceId === invoice.id && (
+                            <p className="text-[10px] text-primary font-bold mt-2 flex items-center gap-1.5">
+                              <Loader2 size={12} className="animate-spin" /> Uploading securely...
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/30 rounded-xl p-3 border border-slate-100 dark:border-slate-700/30">
+                        <CheckCheck size={16} className={invoice.status === 'Paid' ? 'text-emerald-500' : 'text-blue-500'} />
+                        <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                          {invoice.status === 'Paid' ? 'Payment received and verified. Thank you.' : 'Proof of payment is currently under review by our accounts team.'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

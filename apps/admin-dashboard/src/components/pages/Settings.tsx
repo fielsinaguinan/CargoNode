@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Bell, Smartphone } from 'lucide-react'
+import { Bell, Mail } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import PageHeader from '../PageHeader'
 
@@ -29,31 +29,31 @@ function useLocalStorage<T>(key: string, initialValue: T) {
 const Settings: React.FC = () => {
   // Use local storage for other settings so they persist
   const [urgentAlerts, setUrgentAlerts] = useLocalStorage('cargonode-urgent-alerts', true)
-  const [smsAlerts, setSmsAlerts] = useState(false)
-  const [loadingSms, setLoadingSms] = useState(true)
+  const [emailAlerts, setEmailAlerts] = useState(false)
+  const [loadingEmail, setLoadingEmail] = useState(true)
 
   useEffect(() => {
-    const fetchSmsSetting = async () => {
+    const fetchEmailSetting = async () => {
       const { data, error } = await supabase
         .from('system_settings')
         .select('value')
-        .eq('key', 'sms_alerts_enabled')
+        .eq('key', 'email_alerts_enabled')
         .single()
       
       if (!error && data) {
-        setSmsAlerts(data.value === 'true' || data.value === true)
+        setEmailAlerts(data.value === 'true' || data.value === true)
       }
-      setLoadingSms(false)
+      setLoadingEmail(false)
     }
 
-    fetchSmsSetting()
+    fetchEmailSetting()
   }, [])
 
-  const handleSmsToggle = async (checked: boolean) => {
-    setSmsAlerts(checked)
+  const handleEmailToggle = async (checked: boolean) => {
+    setEmailAlerts(checked)
     await supabase
       .from('system_settings')
-      .upsert({ key: 'sms_alerts_enabled', value: checked })
+      .upsert({ key: 'email_alerts_enabled', value: checked })
   }
 
   return (
@@ -94,20 +94,20 @@ const Settings: React.FC = () => {
             <div className="p-6 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400">
-                  <Smartphone size={20} />
+                  <Mail size={20} />
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">SMS Driver Notifications</h4>
-                  <p className="text-xs text-slate-500 mt-0.5">Send waybill updates to drivers via SMS</p>
+                  <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Client Email Notifications</h4>
+                  <p className="text-xs text-slate-500 mt-0.5">Send waybill updates to clients via Email</p>
                 </div>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input 
                   type="checkbox" 
                   className="sr-only peer" 
-                  checked={smsAlerts}
-                  disabled={loadingSms}
-                  onChange={(e) => handleSmsToggle(e.target.checked)}
+                  checked={emailAlerts}
+                  disabled={loadingEmail}
+                  onChange={(e) => handleEmailToggle(e.target.checked)}
                 />
                 <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
               </label>
